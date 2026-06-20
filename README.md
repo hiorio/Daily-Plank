@@ -11,6 +11,12 @@ npm run lint
 npm test
 ```
 
+웹 데모는 GitHub Pages로 배포한다.
+
+```text
+https://hiorio.github.io/Daily-Plank/
+```
+
 추가 검사:
 
 ```bash
@@ -21,6 +27,12 @@ npm run typecheck
 
 ```bash
 npx expo start --web
+```
+
+GitHub Pages용 정적 export:
+
+```bash
+npm run export:web
 ```
 
 ## 주요 라이브러리

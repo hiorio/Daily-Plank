@@ -29,7 +29,8 @@
       "bundler": "metro"
     },
     "experiments": {
-      "typedRoutes": true
+      "typedRoutes": true,
+      "baseUrl": "/Daily-Plank"
     }
   }
 }
