@@ -1,0 +1,47 @@
+{
+  "name": "plank-guide-mvp",
+  "version": "0.1.0",
+  "private": true,
+  "main": "expo-router/entry",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "lint": "eslint src --ext .ts,.tsx",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@expo/vector-icons": "latest",
+    "@react-native-async-storage/async-storage": "latest",
+    "expo": "latest",
+    "expo-audio": "latest",
+    "expo-haptics": "latest",
+    "expo-keep-awake": "latest",
+    "expo-router": "latest",
+    "expo-speech": "latest",
+    "expo-sqlite": "latest",
+    "lottie-react-native": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "react-native": "latest",
+    "react-native-reanimated": "latest",
+    "react-native-safe-area-context": "latest",
+    "react-native-screens": "latest",
+    "react-native-web": "latest",
+    "zustand": "latest"
+  },
+  "devDependencies": {
+    "@testing-library/react-native": "latest",
+    "@types/react": "latest",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "^8.57.1",
+    "eslint-config-prettier": "latest",
+    "eslint-config-expo": "latest",
+    "prettier": "latest",
+    "typescript": "latest",
+    "vitest": "latest"
+  }
+}
