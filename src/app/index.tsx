@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -28,10 +27,10 @@ export default function HomeScreen() {
           </View>
           <View style={styles.headerActions}>
             <Pressable accessibilityLabel="운동 기록" onPress={() => router.push('/history')} style={styles.iconButton}>
-              <Ionicons name="calendar" size={22} color={colors.text} />
+              <Text style={styles.iconButtonText}>기록</Text>
             </Pressable>
             <Pressable accessibilityLabel="설정" onPress={() => router.push('/settings')} style={styles.iconButton}>
-              <Ionicons name="settings" size={22} color={colors.text} />
+              <Text style={styles.iconButtonText}>설정</Text>
             </Pressable>
           </View>
         </View>
@@ -87,7 +86,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   iconButton: {
-    width: 44,
+    width: 54,
     height: 44,
     borderRadius: radius.md,
     backgroundColor: colors.surface,
@@ -95,6 +94,11 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  iconButtonText: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '900',
   },
   statsRow: {
     flexDirection: 'row',

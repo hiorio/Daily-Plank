@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { WorkoutSession } from '../domain/workoutSession';
 import { formatDurationKorean } from '../utils/duration';
@@ -29,11 +28,10 @@ export function SessionCard({ session, onPress, onStart }: SessionCardProps) {
             {exerciseCount}개 동작
           </Text>
         </View>
-        <Ionicons name="chevron-forward" size={22} color={colors.muted} />
+        <Text style={styles.detailText}>상세</Text>
       </View>
       <Text style={styles.description}>{session.description}</Text>
       <Pressable accessibilityRole="button" onPress={onStart} style={styles.button}>
-        <Ionicons name="play" size={18} color="#FFFFFF" />
         <Text style={styles.buttonText}>시작</Text>
       </Pressable>
     </Pressable>
@@ -80,5 +78,10 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#FFFFFF',
     fontWeight: '800',
+  },
+  detailText: {
+    color: colors.primaryDark,
+    fontSize: 13,
+    fontWeight: '900',
   },
 });

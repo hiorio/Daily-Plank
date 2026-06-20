@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -25,7 +24,7 @@ export default function CompleteScreen() {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.content}>
         <View style={styles.badge}>
-          <Ionicons name="checkmark" size={42} color="#FFFFFF" />
+          <Text style={styles.badgeText}>완료</Text>
         </View>
         <Text style={styles.title}>세션을 완료했다.</Text>
         <Text style={styles.subtitle}>{record?.sessionTitle ?? '운동 기록을 불러오는 중'}</Text>
@@ -66,6 +65,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignSelf: 'center',
   },
+  badgeText: { color: '#FFFFFF', fontWeight: '900', fontSize: 18 },
   title: { color: colors.text, fontSize: 28, fontWeight: '900', textAlign: 'center' },
   subtitle: { color: colors.muted, textAlign: 'center' },
   grid: { flexDirection: 'row', gap: spacing.md },

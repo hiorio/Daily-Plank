@@ -1,4 +1,3 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -62,14 +61,13 @@ export default function SessionDetailScreen() {
           const exercise = step.exerciseId ? exerciseById.get(step.exerciseId) : null;
           return exercise?.cautions.map((caution) => (
             <View key={`${step.id}-${caution}`} style={styles.cautionRow}>
-              <Ionicons name="alert-circle" size={18} color={colors.accent} />
+              <Text style={styles.cautionMarker}>!</Text>
               <Text style={styles.caution}>{caution}</Text>
             </View>
           ));
         })}
 
         <Pressable onPress={() => router.push(`/workout/${session.id}`)} style={styles.startButton}>
-          <Ionicons name="play" size={20} color="#FFFFFF" />
           <Text style={styles.startText}>운동 시작</Text>
         </Pressable>
       </ScrollView>
@@ -108,6 +106,7 @@ const styles = StyleSheet.create({
   stepTitle: { color: colors.text, fontWeight: '800' },
   stepMeta: { color: colors.muted, marginTop: spacing.xs },
   cautionRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start' },
+  cautionMarker: { color: colors.accent, fontWeight: '900' },
   caution: { flex: 1, color: colors.muted, lineHeight: 20 },
   startButton: {
     minHeight: 56,

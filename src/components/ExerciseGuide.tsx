@@ -1,7 +1,8 @@
-import { StyleSheet, Text, View } from 'react-native';
+import { Image, StyleSheet, Text, View } from 'react-native';
 import { Exercise } from '../domain/exercise';
 import { colors, radius, spacing } from '../constants/theme';
 import { PostureIllustration } from './PostureIllustration';
+import { exerciseImages } from '../data/exerciseImages';
 
 interface ExerciseGuideProps {
   exercise: Exercise | null;
@@ -12,10 +13,15 @@ interface ExerciseGuideProps {
 
 export function ExerciseGuide({ exercise, title, isRest, detailed }: ExerciseGuideProps) {
   const guides = exercise?.activeGuides ?? [];
+  const exerciseImage = exercise ? exerciseImages[exercise.id] : null;
 
   return (
     <View style={[styles.container, isRest && styles.restContainer]}>
-      <PostureIllustration exerciseId={exercise?.id} isRest={isRest} />
+      {exerciseImage && !isRest ? (
+        <Image source={exerciseImage} resizeMode="cover" style={styles.exerciseImage} />
+      ) : (
+        <PostureIllustration exerciseId={exercise?.id} isRest={isRest} />
+      )}
       <Text style={styles.title}>{title}</Text>
       <Text style={styles.guide}>{exercise?.startGuide ?? '호흡을 고르고 다음 동작을 준비한다.'}</Text>
       {detailed &&
@@ -40,6 +46,14 @@ const styles = StyleSheet.create({
   },
   restContainer: {
     backgroundColor: colors.rest,
+  },
+  exerciseImage: {
+    width: '100%',
+    height: 210,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: '#FAF7F0',
   },
   title: {
     color: colors.text,
