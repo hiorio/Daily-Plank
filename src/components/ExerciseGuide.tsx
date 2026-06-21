@@ -6,24 +6,40 @@ import { exerciseImages } from '../data/exerciseImages';
 
 interface ExerciseGuideProps {
   exercise: Exercise | null;
+  previewExercise?: Exercise | null | undefined;
   title: string;
   isRest: boolean;
+  isPrepare?: boolean | undefined;
   detailed: boolean;
 }
 
-export function ExerciseGuide({ exercise, title, isRest, detailed }: ExerciseGuideProps) {
+export function ExerciseGuide({
+  exercise,
+  previewExercise,
+  title,
+  isRest,
+  isPrepare,
+  detailed,
+}: ExerciseGuideProps) {
+  const displayedExercise = exercise ?? (isPrepare ? previewExercise : null);
   const guides = exercise?.activeGuides ?? [];
-  const exerciseImage = exercise ? exerciseImages[exercise.id] : null;
+  const exerciseImage = displayedExercise ? exerciseImages[displayedExercise.id] : null;
+  const shouldShowBreathingVisual = isRest || Boolean(isPrepare && !exerciseImage);
+  const guideText =
+    exercise?.startGuide ??
+    (isPrepare && previewExercise
+      ? `곧 시작할 ${previewExercise.name} 자세를 확인하고 호흡을 고른다.`
+      : '호흡을 고르고 다음 동작을 준비한다.');
 
   return (
     <View style={[styles.container, isRest && styles.restContainer]}>
       {exerciseImage && !isRest ? (
         <Image source={exerciseImage} resizeMode="cover" style={styles.exerciseImage} />
       ) : (
-        <PostureIllustration exerciseId={exercise?.id} isRest={isRest} />
+        <PostureIllustration exerciseId={displayedExercise?.id} isRest={shouldShowBreathingVisual} />
       )}
       <Text style={styles.title}>{title}</Text>
-      <Text style={styles.guide}>{exercise?.startGuide ?? '호흡을 고르고 다음 동작을 준비한다.'}</Text>
+      <Text style={styles.guide}>{guideText}</Text>
       {detailed &&
         guides.map((guide) => (
           <Text key={guide} style={styles.detail}>

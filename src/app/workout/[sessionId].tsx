@@ -136,7 +136,10 @@ export default function WorkoutScreen() {
   const currentStep = snapshot.currentStep;
   const currentExercise =
     currentStep?.exerciseId != null ? exerciseById.get(currentStep.exerciseId) ?? null : null;
+  const previewExercise =
+    snapshot.nextStep?.exerciseId != null ? exerciseById.get(snapshot.nextStep.exerciseId) ?? null : null;
   const isRest = currentStep?.type === 'REST' || currentStep?.type === 'COOLDOWN';
+  const isPrepare = currentStep?.type === 'PREPARE';
   const statusLabel =
     snapshot.status === 'COUNTDOWN' ? '준비 카운트다운' : isRest ? '휴식 남은 시간' : '동작 남은 시간';
 
@@ -153,8 +156,10 @@ export default function WorkoutScreen() {
         <WorkoutTimer seconds={snapshot.stepRemainingSeconds} label={statusLabel} />
         <ExerciseGuide
           exercise={currentExercise}
+          previewExercise={previewExercise}
           title={currentStep?.title ?? session.title}
           isRest={isRest}
+          isPrepare={isPrepare}
           detailed={settings.detailedGuideEnabled}
         />
         <NextStepPreview nextStepTitle={snapshot.nextStep?.title ?? null} />
