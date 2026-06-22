@@ -5,6 +5,8 @@
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
+    "start:mobile": "expo start --lan",
+    "start:tunnel": "expo start --tunnel",
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
@@ -34,13 +36,14 @@
     "zustand": "latest"
   },
   "devDependencies": {
+    "@expo/ngrok": "^4.1.0",
     "@testing-library/react-native": "latest",
     "@types/react": "latest",
     "@typescript-eslint/eslint-plugin": "^7.18.0",
     "@typescript-eslint/parser": "^7.18.0",
     "eslint": "^8.57.1",
-    "eslint-config-prettier": "latest",
     "eslint-config-expo": "latest",
+    "eslint-config-prettier": "latest",
     "prettier": "latest",
     "typescript": "latest",
     "vitest": "latest"

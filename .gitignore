@@ -4,6 +4,7 @@ coverage
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+expo-tunnel.log
 *.tsbuildinfo
 expo-env.d.ts
 
