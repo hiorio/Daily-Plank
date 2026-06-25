@@ -1,14 +1,23 @@
 {
   "expo": {
-    "name": "Plank Guide",
-    "slug": "plank-guide-mvp",
-    "scheme": "plankguide",
+    "name": "Daily Plank",
+    "slug": "daily-plank",
+    "scheme": "dailyplank",
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
+    "icon": "./src/assets/branding/icon.png",
     "assetBundlePatterns": ["**/*"],
     "plugins": [
       "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          "image": "./src/assets/branding/splash.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#F5F8F4"
+        }
+      ],
       [
         "expo-audio",
         {
@@ -20,10 +29,17 @@
       "expo-sqlite"
     ],
     "ios": {
+      "bundleIdentifier": "com.hiorio.dailyplank",
+      "buildNumber": "1",
       "supportsTablet": false
     },
     "android": {
-      "package": "com.plankguide.mvp"
+      "package": "com.hiorio.dailyplank",
+      "versionCode": 1,
+      "adaptiveIcon": {
+        "foregroundImage": "./src/assets/branding/adaptive-icon.png",
+        "backgroundColor": "#2A8B59"
+      }
     },
     "web": {
       "bundler": "metro"

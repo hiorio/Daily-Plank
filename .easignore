@@ -1,0 +1,10 @@
+node_modules/
+.git/
+.expo/
+dist/
+coverage/
+*.log
+*.tsbuildinfo
+expo-env.d.ts
+web-startprocess.*.log
+expo-web.*.log
