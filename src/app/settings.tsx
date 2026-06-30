@@ -1,10 +1,11 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { colors, radius, spacing } from '../constants/theme';
 import { deleteAllWorkoutRecords } from '../database/workoutRecordRepository';
 import { AppSettings } from '../domain/settings';
+import { AudioCueManager } from '../engine/AudioCueManager';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useStatisticsStore } from '../stores/statisticsStore';
 
@@ -22,12 +23,48 @@ export default function SettingsScreen() {
   const settings = useSettingsStore((store) => store.settings);
   const updateSetting = useSettingsStore((store) => store.updateSetting);
   const refreshStatistics = useStatisticsStore((store) => store.refresh);
+  const cueManager = useRef(new AudioCueManager()).current;
   const [deleteVisible, setDeleteVisible] = useState(false);
+  const [testStatus, setTestStatus] = useState<string | null>(null);
 
   async function handleDeleteRecords() {
     await deleteAllWorkoutRecords();
     await refreshStatistics();
     setDeleteVisible(false);
+  }
+
+  async function runCueTest(type: 'voice' | 'sound' | 'haptic' | 'all') {
+    const disabledMessages = {
+      voice: '음성 안내가 꺼져 있다.',
+      sound: '효과음이 꺼져 있다.',
+      haptic: '진동 안내가 꺼져 있다.',
+      all: '꺼진 항목은 테스트에서 건너뛴다.',
+    };
+
+    try {
+      if (type === 'voice' && !settings.voiceEnabled) {
+        setTestStatus(disabledMessages.voice);
+        return;
+      }
+      if (type === 'sound' && !settings.soundEnabled) {
+        setTestStatus(disabledMessages.sound);
+        return;
+      }
+      if (type === 'haptic' && !settings.hapticEnabled) {
+        setTestStatus(disabledMessages.haptic);
+        return;
+      }
+
+      if (type === 'voice') await cueManager.previewVoice(settings);
+      if (type === 'sound') await cueManager.previewSound(settings);
+      if (type === 'haptic') await cueManager.previewHaptic(settings);
+      if (type === 'all') await cueManager.previewAll(settings);
+
+      setTestStatus(type === 'all' ? disabledMessages.all : '테스트 안내를 실행했다.');
+    } catch (error) {
+      if (__DEV__) console.warn('Cue test failed', error);
+      setTestStatus('테스트 실행 중 오류가 발생했다. 기기 음량과 권한을 확인해 달라.');
+    }
   }
 
   return (
@@ -48,6 +85,49 @@ export default function SettingsScreen() {
             />
           </View>
         ))}
+        <View style={styles.testPanel}>
+          <View style={styles.testHeader}>
+            <Text style={styles.testTitle}>안내 테스트</Text>
+            <Text style={styles.testDescription}>
+              실제 운동 전에 현재 기기에서 음성, 효과음, 진동이 동작하는지 확인한다.
+            </Text>
+          </View>
+          <View style={styles.testButtons}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="음성 안내 테스트"
+              onPress={() => void runCueTest('voice')}
+              style={({ pressed }) => [styles.testButton, pressed && styles.pressedButton]}
+            >
+              <Text style={styles.testButtonText}>음성</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="효과음 테스트"
+              onPress={() => void runCueTest('sound')}
+              style={({ pressed }) => [styles.testButton, pressed && styles.pressedButton]}
+            >
+              <Text style={styles.testButtonText}>효과음</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="진동 테스트"
+              onPress={() => void runCueTest('haptic')}
+              style={({ pressed }) => [styles.testButton, pressed && styles.pressedButton]}
+            >
+              <Text style={styles.testButtonText}>진동</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="전체 안내 테스트"
+              onPress={() => void runCueTest('all')}
+              style={({ pressed }) => [styles.testButtonPrimary, pressed && styles.pressedButton]}
+            >
+              <Text style={styles.testButtonPrimaryText}>전체</Text>
+            </Pressable>
+          </View>
+          {testStatus ? <Text style={styles.testStatus}>{testStatus}</Text> : null}
+        </View>
         <Pressable onPress={() => setDeleteVisible(true)} style={styles.deleteButton}>
           <Text style={styles.deleteText}>운동 기록 전체 삭제</Text>
         </Pressable>
@@ -85,6 +165,42 @@ const styles = StyleSheet.create({
   rowText: { flex: 1, gap: spacing.xs },
   label: { color: colors.text, fontSize: 16, fontWeight: '900' },
   description: { color: colors.muted, lineHeight: 19 },
+  testPanel: {
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.lg,
+    gap: spacing.md,
+  },
+  testHeader: { gap: spacing.xs },
+  testTitle: { color: colors.text, fontSize: 18, fontWeight: '900' },
+  testDescription: { color: colors.muted, lineHeight: 20 },
+  testButtons: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  testButton: {
+    minHeight: 44,
+    minWidth: 72,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+  },
+  testButtonPrimary: {
+    minHeight: 44,
+    minWidth: 72,
+    borderRadius: radius.md,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+  },
+  pressedButton: { opacity: 0.72 },
+  testButtonText: { color: colors.text, fontWeight: '900' },
+  testButtonPrimaryText: { color: '#FFFFFF', fontWeight: '900' },
+  testStatus: { color: colors.primaryDark, fontWeight: '700', lineHeight: 20 },
   deleteButton: {
     minHeight: 54,
     borderRadius: radius.md,

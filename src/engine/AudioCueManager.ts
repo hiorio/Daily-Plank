@@ -93,6 +93,26 @@ export class AudioCueManager {
     }
   }
 
+  async previewVoice(settings: AppSettings): Promise<void> {
+    await this.speak('음성 안내 테스트입니다. 운동 중에는 다음 동작과 남은 시간을 이렇게 안내합니다.', settings.voiceEnabled);
+  }
+
+  async previewSound(settings: AppSettings): Promise<void> {
+    await this.playSound(settings.soundEnabled);
+  }
+
+  async previewHaptic(settings: AppSettings): Promise<void> {
+    await this.haptics.tick(settings.hapticEnabled);
+  }
+
+  async previewAll(settings: AppSettings): Promise<void> {
+    await Promise.all([
+      this.previewSound(settings),
+      this.previewHaptic(settings),
+      this.previewVoice(settings),
+    ]);
+  }
+
   private async speak(message: string, enabled: boolean): Promise<void> {
     const trimmedMessage = message.trim();
     if (!enabled || !trimmedMessage) return;
