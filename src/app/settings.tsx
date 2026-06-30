@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { type Href, useRouter } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ConfirmModal } from '../components/ConfirmModal';
@@ -20,6 +21,7 @@ const rows: { key: keyof AppSettings; label: string; description: string }[] = [
 ];
 
 export default function SettingsScreen() {
+  const router = useRouter();
   const settings = useSettingsStore((store) => store.settings);
   const updateSetting = useSettingsStore((store) => store.updateSetting);
   const refreshStatistics = useStatisticsStore((store) => store.refresh);
@@ -128,6 +130,20 @@ export default function SettingsScreen() {
           </View>
           {testStatus ? <Text style={styles.testStatus}>{testStatus}</Text> : null}
         </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="앱 점검 화면으로 이동"
+          onPress={() => router.push('/diagnostics' as Href)}
+          style={({ pressed }) => [styles.diagnosticsButton, pressed && styles.pressedButton]}
+        >
+          <View style={styles.diagnosticsText}>
+            <Text style={styles.diagnosticsTitle}>앱 점검</Text>
+            <Text style={styles.diagnosticsDescription}>
+              TestFlight 배포 전에 세션, 저장소, 음성 환경을 확인한다.
+            </Text>
+          </View>
+          <Text style={styles.diagnosticsAction}>열기</Text>
+        </Pressable>
         <Pressable onPress={() => setDeleteVisible(true)} style={styles.deleteButton}>
           <Text style={styles.deleteText}>운동 기록 전체 삭제</Text>
         </Pressable>
@@ -201,6 +217,22 @@ const styles = StyleSheet.create({
   testButtonText: { color: colors.text, fontWeight: '900' },
   testButtonPrimaryText: { color: '#FFFFFF', fontWeight: '900' },
   testStatus: { color: colors.primaryDark, fontWeight: '700', lineHeight: 20 },
+  diagnosticsButton: {
+    minHeight: 76,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  diagnosticsText: { flex: 1, gap: spacing.xs },
+  diagnosticsTitle: { color: colors.text, fontSize: 16, fontWeight: '900' },
+  diagnosticsDescription: { color: colors.muted, lineHeight: 20 },
+  diagnosticsAction: { color: colors.primaryDark, fontWeight: '900' },
   deleteButton: {
     minHeight: 54,
     borderRadius: radius.md,

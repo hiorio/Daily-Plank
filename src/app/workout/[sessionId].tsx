@@ -42,6 +42,15 @@ export default function WorkoutScreen() {
 
   useEffect(() => {
     if (!session) return;
+    if (
+      engineState.sessionId === session.id &&
+      (engineState.status === 'COUNTDOWN' ||
+        engineState.status === 'RUNNING' ||
+        engineState.status === 'PAUSED')
+    ) {
+      startedSessionRef.current = session.id;
+      return;
+    }
     if (startedSessionRef.current === session.id) return;
     startedSessionRef.current = session.id;
     void startSession(session.id).catch((error) => {
@@ -49,7 +58,7 @@ export default function WorkoutScreen() {
       if (__DEV__) console.error(error);
       router.replace('/');
     });
-  }, [router, session, startSession]);
+  }, [engineState.sessionId, engineState.status, router, session, startSession]);
 
   useEffect(() => {
     if (!settings.keepAwakeEnabled) {

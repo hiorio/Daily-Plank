@@ -62,9 +62,12 @@ npm run submit:ios
 - iOS bundle identifier: `com.hiorio.dailyplank`
 - Android package: `com.hiorio.dailyplank`
 - 앱 아이콘과 스플래시가 실제 iPhone에서 정상 표시되는지 확인
+- 앱 점검 화면에서 실패 항목이 없는지 확인
 - TTS, 효과음, 진동, 화면 켜짐 유지 동작 확인
 - 설정 화면의 안내 테스트 버튼으로 음성/효과음/진동 개별 확인
+- 세션 상세 화면의 안전 안내와 시작 확인 모달 확인
 - 운동 기록이 앱 재시작 후에도 유지되는지 확인
+- 강제 종료 복구 후 기존 운동이 다시 처음부터 시작되지 않는지 확인
 - 개인정보 처리방침 URL 준비
 - App Store Connect 앱 등록 준비
 - iPhone 스크린샷 준비

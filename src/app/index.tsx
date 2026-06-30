@@ -49,7 +49,7 @@ export default function HomeScreen() {
             key={session.id}
             session={session}
             onPress={() => router.push(`/session/${session.id}`)}
-            onStart={() => router.push(`/workout/${session.id}`)}
+            onStart={() => router.push(`/session/${session.id}`)}
           />
         ))}
       </ScrollView>

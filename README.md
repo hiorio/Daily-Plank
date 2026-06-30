@@ -2,11 +2,7 @@
 
 5분, 7분, 10분 플랭크 루틴을 제공하는 Expo 기반 모바일 운동 가이드 앱입니다. 단순 카운트다운이 아니라 현재 동작, 다음 동작, 음성 안내, 효과음, 진동, 자동 휴식 전환, 운동 기록, 주간 통계, 연속 운동일을 포함합니다.
 
-웹 데모:
-
-```text
-https://hiorio.github.io/Daily-Plank/
-```
+현재 우선순위는 GitHub Pages 데모보다 iOS 테스트앱 배포와 실기기 QA입니다. 웹 데모는 보조 확인용으로만 유지합니다.
 
 ## 실행 방법
 
@@ -29,6 +25,12 @@ npm run doctor
 
 ```bash
 npm run export:web
+```
+
+웹 데모 URL:
+
+```text
+https://hiorio.github.io/Daily-Plank/
 ```
 
 ## 휴대폰 테스트
@@ -132,9 +134,13 @@ CREATE TABLE IF NOT EXISTS workout_record (
 - 현재 동작과 다음 동작 이미지 표시
 - 음성 안내, 효과음, 진동 안내
 - 10초/5초/3초 카운트다운 음성 cue
+- 설정 화면 안내 테스트
+- 앱 점검 화면: 세션 데이터, SQLite, AsyncStorage, 설정, 한국어 TTS 확인
+- 운동 시작 전 안전 확인 모달
 - 화면 자동 꺼짐 방지 설정
 - 백그라운드 복귀 시 시간 보정
 - 강제 종료 복구 확인 모달
+- 복구 후 운동 화면 진입 시 진행 중 세션 재시작 방지
 - SQLite 운동 기록 저장/조회/삭제
 - 이번 주 운동 횟수, 주간 누적 시간, 연속 운동일 계산
 - 세션 검증, 타이머, 통계, 완료율 단위 테스트
@@ -152,7 +158,7 @@ CREATE TABLE IF NOT EXISTS workout_record (
 ## 향후 권장 작업
 
 - 실제 기기에서 TTS, haptic, keep awake, SQLite 복구 QA
-- Android preview APK 생성 후 외부 테스트
+- iOS Development Build 생성 후 iPhone 실기기 QA
 - 앱스토어용 스크린샷과 개인정보 처리방침 준비
 - 운동별 Lottie 애니메이션 또는 전문 이미지 세트 적용
 - 세션 데이터를 원격 또는 import 가능한 포맷으로 확장

@@ -32,7 +32,7 @@ export function SessionCard({ session, onPress, onStart }: SessionCardProps) {
       </View>
       <Text style={styles.description}>{session.description}</Text>
       <Pressable accessibilityRole="button" onPress={onStart} style={styles.button}>
-        <Text style={styles.buttonText}>시작</Text>
+        <Text style={styles.buttonText}>준비하기</Text>
       </Pressable>
     </Pressable>
   );

@@ -1,6 +1,8 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { ConfirmModal } from '../../components/ConfirmModal';
 import { colors, radius, spacing } from '../../constants/theme';
 import { exerciseById } from '../../data/exercises';
 import { getWorkoutSession } from '../../data/sessionRepository';
@@ -16,6 +18,7 @@ export default function SessionDetailScreen() {
   const router = useRouter();
   const { sessionId } = useLocalSearchParams<{ sessionId: string }>();
   const session = sessionId ? getWorkoutSession(sessionId) : null;
+  const [safetyVisible, setSafetyVisible] = useState(false);
 
   if (!session) {
     return (
@@ -57,6 +60,13 @@ export default function SessionDetailScreen() {
         ))}
 
         <Text style={styles.sectionTitle}>주의사항</Text>
+        <View style={styles.safetyPanel}>
+          <Text style={styles.safetyTitle}>운동 전 확인</Text>
+          <Text style={styles.safetyText}>
+            통증, 어지러움, 호흡 곤란이 있으면 즉시 중단한다. 허리나 어깨가 불편하면 니
+            플랭크처럼 낮은 강도 동작으로 바꾼다.
+          </Text>
+        </View>
         {exerciseSteps.slice(0, 5).map((step) => {
           const exercise = step.exerciseId ? exerciseById.get(step.exerciseId) : null;
           return exercise?.cautions.map((caution) => (
@@ -67,10 +77,22 @@ export default function SessionDetailScreen() {
           ));
         })}
 
-        <Pressable onPress={() => router.push(`/workout/${session.id}`)} style={styles.startButton}>
+        <Pressable onPress={() => setSafetyVisible(true)} style={styles.startButton}>
           <Text style={styles.startText}>운동 시작</Text>
         </Pressable>
       </ScrollView>
+      <ConfirmModal
+        visible={safetyVisible}
+        title="운동을 시작할까?"
+        message="무리하지 않고, 통증이나 어지러움이 있으면 즉시 중단한다."
+        cancelLabel="조금 더 확인"
+        confirmLabel="시작하기"
+        onCancel={() => setSafetyVisible(false)}
+        onConfirm={() => {
+          setSafetyVisible(false);
+          router.push(`/workout/${session.id}`);
+        }}
+      />
     </SafeAreaView>
   );
 }
@@ -108,6 +130,16 @@ const styles = StyleSheet.create({
   cautionRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start' },
   cautionMarker: { color: colors.accent, fontWeight: '900' },
   caution: { flex: 1, color: colors.muted, lineHeight: 20 },
+  safetyPanel: {
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.lg,
+    gap: spacing.sm,
+  },
+  safetyTitle: { color: colors.text, fontSize: 16, fontWeight: '900' },
+  safetyText: { color: colors.muted, lineHeight: 21 },
   startButton: {
     minHeight: 56,
     borderRadius: radius.md,
