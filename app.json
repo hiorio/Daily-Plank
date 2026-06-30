@@ -31,7 +31,11 @@
     "ios": {
       "bundleIdentifier": "com.hiorio.dailyplank",
       "buildNumber": "1",
-      "supportsTablet": false
+      "supportsTablet": false,
+      "infoPlist": {
+        "CFBundleDevelopmentRegion": "ko",
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "package": "com.hiorio.dailyplank",

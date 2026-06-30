@@ -55,9 +55,14 @@ EAS 로그인이 필요합니다.
 
 ```bash
 npx eas login
+npm run build:dev:ios
+npm run build:simulator:ios
+npm run build:preview:ios
 npm run build:dev:android
 npm run build:preview:android
 ```
+
+iOS 실기기 빌드는 Apple Developer Program 계정과 테스트 iPhone 등록이 필요합니다. Windows에서도 EAS Build로 iOS 빌드 생성은 가능하지만, iOS Simulator 실행은 Mac이 필요합니다.
 
 ## 주요 라이브러리
 
@@ -135,6 +140,7 @@ CREATE TABLE IF NOT EXISTS workout_record (
 - 세션 검증, 타이머, 통계, 완료율 단위 테스트
 - GitHub Pages 웹 데모 배포
 - Android/iOS 앱 식별자, 아이콘, 스플래시, EAS 빌드 스크립트
+- iOS development, simulator, preview, production 빌드 명령
 
 ## 남아 있는 제한사항
 
@@ -151,4 +157,4 @@ CREATE TABLE IF NOT EXISTS workout_record (
 - 운동별 Lottie 애니메이션 또는 전문 이미지 세트 적용
 - 세션 데이터를 원격 또는 import 가능한 포맷으로 확장
 
-자세한 앱 빌드 체크리스트는 [docs/release-checklist.md](docs/release-checklist.md)를 참고합니다.
+자세한 앱 빌드 체크리스트는 [docs/release-checklist.md](docs/release-checklist.md)를 참고합니다. iOS 우선 개발 흐름은 [docs/ios-development.md](docs/ios-development.md)에 정리되어 있습니다.

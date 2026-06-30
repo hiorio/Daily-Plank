@@ -15,6 +15,11 @@
     "doctor": "npx expo-doctor",
     "build:dev:android": "eas build --profile development --platform android",
     "build:preview:android": "eas build --profile preview --platform android",
+    "build:dev:ios": "eas build --profile development --platform ios",
+    "build:simulator:ios": "eas build --profile ios-simulator --platform ios",
+    "build:preview:ios": "eas build --profile preview --platform ios",
+    "build:production:ios": "eas build --profile production --platform ios",
+    "submit:ios": "eas submit --platform ios",
     "lint": "eslint src --ext .ts,.tsx",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"
