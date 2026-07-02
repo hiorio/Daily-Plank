@@ -56,7 +56,7 @@ Expo Go 앱에서 터미널에 표시되는 QR 또는 `exp://...` 주소를 열�
 EAS 로그인이 필요합니다.
 
 ```bash
-npx eas login
+npx eas-cli login
 npm run build:dev:ios
 npm run build:simulator:ios
 npm run build:preview:ios

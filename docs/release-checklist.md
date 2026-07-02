@@ -27,7 +27,7 @@ Expo Go는 빠른 UI/라우팅/기본 기능 확인에 적합하다. 실제 앱 
 실제 iPhone에서 Development Build를 설치하려면 Apple Developer Program 계정과 테스트 기기 등록이 필요하다.
 
 ```bash
-npx eas login
+npx eas-cli login
 npm run build:dev:ios
 ```
 

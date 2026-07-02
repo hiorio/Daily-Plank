@@ -14,7 +14,7 @@ npm run doctor
 ## 2. iOS Development Build
 
 ```bash
-npx eas login
+npx eas-cli login
 npm run build:dev:ios
 ```
 
