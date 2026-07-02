@@ -46,7 +46,10 @@
       "adaptiveIcon": {
         "foregroundImage": "./src/assets/branding/adaptive-icon.png",
         "backgroundColor": "#2A8B59"
-      }
+      },
+      "permissions": [
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
     },
     "web": {
       "bundler": "metro"
@@ -54,6 +57,13 @@
     "experiments": {
       "typedRoutes": true,
       "baseUrl": "/Daily-Plank"
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "2b9a08a4-d627-4722-844f-68ae70c10275"
+      }
+    },
+    "owner": "hiorio"
   }
 }
