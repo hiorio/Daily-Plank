@@ -35,10 +35,16 @@ export default function WorkoutScreen() {
   const clearSession = useWorkoutStore((store) => store.clearSession);
   const engineState = useWorkoutStore((store) => store.state);
   const settings = useSettingsStore((store) => store.settings);
-  const cueManagerRef = useRef(new AudioCueManager());
+  const cueManager = useMemo(() => new AudioCueManager(), []);
   const handledCompletionRef = useRef(false);
   const startedSessionRef = useRef<string | null>(null);
   const [exitVisible, setExitVisible] = useState(false);
+
+  useEffect(() => {
+    return () => {
+      cueManager.dispose();
+    };
+  }, [cueManager]);
 
   useEffect(() => {
     if (!session) return;
@@ -74,19 +80,23 @@ export default function WorkoutScreen() {
   }, [settings.keepAwakeEnabled]);
 
   useEffect(() => {
-    const currentStep = snapshot.currentStep;
+    // 일시정지·종료·완료 즉시 진행 중인 음성을 끊어 조작과 안내가 어긋나지 않게 한다.
     if (
-      !currentStep ||
       engineState.status === 'PAUSED' ||
-      engineState.stepStartedAt == null ||
-      engineState.stepEndsAt == null
+      engineState.status === 'CANCELLED' ||
+      engineState.status === 'COMPLETED'
     ) {
+      void cueManager.stopSpeech();
       return;
     }
 
-    const manager = cueManagerRef.current;
-    void manager.playStepStart(currentStep, settings);
-    void manager.evaluateStepCues(
+    const currentStep = snapshot.currentStep;
+    if (!currentStep || engineState.stepStartedAt == null || engineState.stepEndsAt == null) {
+      return;
+    }
+
+    void cueManager.playStepStart(currentStep, settings, engineState.stepStartedAt, snapshot.nextStep);
+    void cueManager.evaluateStepCues(
       currentStep,
       engineState.stepStartedAt,
       engineState.stepEndsAt,
@@ -94,12 +104,14 @@ export default function WorkoutScreen() {
       settings,
     );
   }, [
+    cueManager,
     engineState.currentStepIndex,
     engineState.status,
     engineState.stepEndsAt,
     engineState.stepStartedAt,
     settings,
     snapshot.currentStep,
+    snapshot.nextStep,
     snapshot.stepRemainingSeconds,
   ]);
 
@@ -121,6 +133,7 @@ export default function WorkoutScreen() {
 
   async function handleExitConfirmed() {
     if (!session) return;
+    await cueManager.stopSpeech();
     await cancelSession();
     const cancelledState = useWorkoutStore.getState().state;
     const record = buildWorkoutRecord(session, cancelledState, 'CANCELLED');
@@ -174,9 +187,15 @@ export default function WorkoutScreen() {
         <NextStepPreview nextStepTitle={snapshot.nextStep?.title ?? null} />
         <WorkoutControls
           paused={snapshot.status === 'PAUSED'}
-          onPrevious={() => void moveToPreviousStep()}
+          onPrevious={() => {
+            void cueManager.stopSpeech();
+            void moveToPreviousStep();
+          }}
           onTogglePause={() => void (snapshot.status === 'PAUSED' ? resumeSession() : pauseSession())}
-          onNext={() => void moveToNextStep()}
+          onNext={() => {
+            void cueManager.stopSpeech();
+            void moveToNextStep();
+          }}
           onExit={() => setExitVisible(true)}
         />
       </ScrollView>

@@ -7,6 +7,10 @@ function isBoolean(value: unknown): value is boolean {
   return typeof value === 'boolean';
 }
 
+function isString(value: unknown): value is string {
+  return typeof value === 'string';
+}
+
 export async function loadSettings(): Promise<AppSettings> {
   try {
     const raw = await AsyncStorage.getItem(SETTINGS_KEY);
@@ -30,6 +34,16 @@ export async function loadSettings(): Promise<AppSettings> {
       detailedGuideEnabled: isBoolean(parsed.detailedGuideEnabled)
         ? parsed.detailedGuideEnabled
         : defaultSettings.detailedGuideEnabled,
+      hdVoiceEnabled: isBoolean(parsed.hdVoiceEnabled)
+        ? parsed.hdVoiceEnabled
+        : defaultSettings.hdVoiceEnabled,
+      hdVoiceName:
+        isString(parsed.hdVoiceName) && parsed.hdVoiceName.trim().length > 0
+          ? parsed.hdVoiceName
+          : defaultSettings.hdVoiceName,
+      googleTtsApiKey: isString(parsed.googleTtsApiKey)
+        ? parsed.googleTtsApiKey
+        : defaultSettings.googleTtsApiKey,
     };
   } catch (error) {
     if (__DEV__) console.warn('Settings are corrupted. Falling back to defaults.', error);

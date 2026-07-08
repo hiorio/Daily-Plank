@@ -96,7 +96,7 @@ export class WorkoutEngine {
     const nextIndex = this.state.currentStepIndex + 1;
     const nextStep = session.steps[nextIndex];
     if (!nextStep) {
-      return this.completeSession();
+      return this.completeSession(now);
     }
 
     const currentStep = session.steps[this.state.currentStepIndex];
@@ -107,6 +107,7 @@ export class WorkoutEngine {
       stepStartedAt: now,
       stepEndsAt: now + nextStep.durationSeconds * 1000,
       pausedAt: null,
+      accumulatedPauseMs: this.state.accumulatedPauseMs + this.pendingPauseMs(now),
       skippedStepCount:
         currentStep?.type === 'EXERCISE' ? this.state.skippedStepCount + 1 : this.state.skippedStepCount,
     };
@@ -129,20 +130,38 @@ export class WorkoutEngine {
       stepStartedAt: now,
       stepEndsAt: now + previousStep.durationSeconds * 1000,
       pausedAt: null,
+      accumulatedPauseMs: this.state.accumulatedPauseMs + this.pendingPauseMs(now),
     };
     return this.getState();
   }
 
-  cancelSession(): WorkoutEngineState {
+  cancelSession(now = Date.now()): WorkoutEngineState {
     if (this.state.status === 'IDLE') return this.getState();
-    this.state = { ...this.state, status: 'CANCELLED', pausedAt: null };
+    this.state = {
+      ...this.state,
+      status: 'CANCELLED',
+      pausedAt: null,
+      accumulatedPauseMs: this.state.accumulatedPauseMs + this.pendingPauseMs(now),
+    };
     return this.getState();
   }
 
-  completeSession(): WorkoutEngineState {
+  completeSession(now = Date.now()): WorkoutEngineState {
     if (this.state.status === 'IDLE') return this.getState();
-    this.state = { ...this.state, status: 'COMPLETED', pausedAt: null };
+    this.state = {
+      ...this.state,
+      status: 'COMPLETED',
+      pausedAt: null,
+      accumulatedPauseMs: this.state.accumulatedPauseMs + this.pendingPauseMs(now),
+    };
     return this.getState();
+  }
+
+  // 일시정지 상태에서 이동·종료·완료가 일어나면 아직 반영되지 않은 정지 시간을
+  // 누적해 두어야 경과 시간과 기록이 뒤틀리지 않는다.
+  private pendingPauseMs(now: number): number {
+    if (this.state.pausedAt == null) return 0;
+    return Math.max(0, now - this.state.pausedAt);
   }
 
   restoreSession(session: WorkoutSession, now = Date.now()): WorkoutEngineState {
