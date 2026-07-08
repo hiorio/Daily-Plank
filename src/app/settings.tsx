@@ -1,20 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useRef, useState } from 'react';
 import { type Href, useRouter } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { colors, radius, spacing } from '../constants/theme';
 import { deleteAllWorkoutRecords } from '../database/workoutRecordRepository';
-import { AppSettings, hdVoiceOptions } from '../domain/settings';
+import { AppSettings } from '../domain/settings';
 import { AudioCueManager } from '../engine/AudioCueManager';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useStatisticsStore } from '../stores/statisticsStore';
 
-type BooleanSettingKey = {
-  [K in keyof AppSettings]: AppSettings[K] extends boolean ? K : never;
-}[keyof AppSettings];
-
-const rows: { key: BooleanSettingKey; label: string; description: string }[] = [
+const rows: { key: keyof AppSettings; label: string; description: string }[] = [
   { key: 'voiceEnabled', label: '음성 안내', description: '동작 시작과 주요 큐를 한국어 TTS로 안내한다.' },
   { key: 'soundEnabled', label: '효과음', description: '동작 전환 시 짧은 효과음을 재생한다.' },
   { key: 'hapticEnabled', label: '진동 안내', description: '동작 전환과 카운트다운에 진동을 사용한다.' },
@@ -29,15 +25,9 @@ export default function SettingsScreen() {
   const settings = useSettingsStore((store) => store.settings);
   const updateSetting = useSettingsStore((store) => store.updateSetting);
   const refreshStatistics = useStatisticsStore((store) => store.refresh);
-  const cueManager = useMemo(() => new AudioCueManager(), []);
+  const cueManager = useRef(new AudioCueManager()).current;
   const [deleteVisible, setDeleteVisible] = useState(false);
   const [testStatus, setTestStatus] = useState<string | null>(null);
-
-  useEffect(() => {
-    return () => {
-      cueManager.dispose();
-    };
-  }, [cueManager]);
 
   async function handleDeleteRecords() {
     await deleteAllWorkoutRecords();
@@ -97,60 +87,6 @@ export default function SettingsScreen() {
             />
           </View>
         ))}
-        <View style={styles.testPanel}>
-          <View style={styles.testHeader}>
-            <View style={styles.hdVoiceHeaderRow}>
-              <Text style={styles.testTitle}>Chirp HD 음성</Text>
-              <Switch
-                value={settings.hdVoiceEnabled}
-                onValueChange={(value) => void updateSetting('hdVoiceEnabled', value)}
-                trackColor={{ true: colors.primary, false: colors.border }}
-                thumbColor="#FFFFFF"
-              />
-            </View>
-            <Text style={styles.testDescription}>
-              Google Cloud TTS의 Chirp 3: HD 모델을 기본 목소리로 사용한다. API 키가 비어 있거나
-              네트워크가 불안정하면 기기 내장 음성으로 자동 대체된다.
-            </Text>
-          </View>
-          <TextInput
-            accessibilityLabel="Google Cloud TTS API 키"
-            value={settings.googleTtsApiKey}
-            onChangeText={(value) => void updateSetting('googleTtsApiKey', value)}
-            placeholder="Google Cloud TTS API 키"
-            placeholderTextColor={colors.muted}
-            autoCapitalize="none"
-            autoCorrect={false}
-            secureTextEntry
-            style={styles.apiKeyInput}
-          />
-          <View style={styles.voiceChips}>
-            {hdVoiceOptions.map((option) => {
-              const selected = settings.hdVoiceName === option.id;
-              return (
-                <Pressable
-                  key={option.id}
-                  accessibilityRole="button"
-                  accessibilityLabel={`${option.label} 음성 선택`}
-                  onPress={() => void updateSetting('hdVoiceName', option.id)}
-                  style={({ pressed }) => [
-                    styles.voiceChip,
-                    selected && styles.voiceChipSelected,
-                    pressed && styles.pressedButton,
-                  ]}
-                >
-                  <Text style={[styles.voiceChipText, selected && styles.voiceChipTextSelected]}>
-                    {option.label}
-                  </Text>
-                </Pressable>
-              );
-            })}
-          </View>
-          <Text style={styles.testDescription}>
-            Chirp 3: HD 한국어 화자는 위 8종 외에도 30여 종이 더 있으며, 목록에 이름만 추가하면
-            바로 사용할 수 있다. 아래 음성 테스트로 선택한 목소리를 미리 들을 수 있다.
-          </Text>
-        </View>
         <View style={styles.testPanel}>
           <View style={styles.testHeader}>
             <Text style={styles.testTitle}>안내 테스트</Text>
@@ -256,38 +192,6 @@ const styles = StyleSheet.create({
   testHeader: { gap: spacing.xs },
   testTitle: { color: colors.text, fontSize: 18, fontWeight: '900' },
   testDescription: { color: colors.muted, lineHeight: 20 },
-  hdVoiceHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-  },
-  apiKeyInput: {
-    minHeight: 44,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    paddingHorizontal: spacing.md,
-    color: colors.text,
-  },
-  voiceChips: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  voiceChip: {
-    minHeight: 40,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.md,
-  },
-  voiceChipSelected: {
-    borderColor: colors.primary,
-    backgroundColor: colors.primary,
-  },
-  voiceChipText: { color: colors.text, fontWeight: '800', fontSize: 13 },
-  voiceChipTextSelected: { color: '#FFFFFF' },
   testButtons: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   testButton: {
     minHeight: 44,

@@ -88,7 +88,7 @@ async function checkDatabase(): Promise<DiagnosticItem> {
 async function checkSettings(): Promise<DiagnosticItem> {
   try {
     const settings = await loadSettings();
-    const enabledCount = Object.values(settings).filter((value) => value === true).length;
+    const enabledCount = Object.values(settings).filter(Boolean).length;
     return {
       id: 'settings',
       title: '설정 저장소',
