@@ -14,6 +14,7 @@ import { exerciseById } from '../../data/exercises';
 import { getWorkoutSession } from '../../data/sessionRepository';
 import { AudioCueManager } from '../../engine/AudioCueManager';
 import { useWorkoutTimer } from '../../hooks/useWorkoutTimer';
+import { shouldCompleteWorkoutOnExit } from '../../services/workoutExitService';
 import { buildWorkoutRecord, saveWorkoutRecord } from '../../services/workoutRecordService';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useWorkoutStore } from '../../stores/workoutStore';
@@ -32,6 +33,7 @@ export default function WorkoutScreen() {
   const moveToNextStep = useWorkoutStore((store) => store.moveToNextStep);
   const moveToPreviousStep = useWorkoutStore((store) => store.moveToPreviousStep);
   const cancelSession = useWorkoutStore((store) => store.cancelSession);
+  const completeSession = useWorkoutStore((store) => store.completeSession);
   const clearSession = useWorkoutStore((store) => store.clearSession);
   const engineState = useWorkoutStore((store) => store.state);
   const settings = useSettingsStore((store) => store.settings);
@@ -137,6 +139,22 @@ export default function WorkoutScreen() {
   async function handleExitConfirmed() {
     if (!session) return;
     await cueManagerRef.current.stopSpeech();
+    const currentState = useWorkoutStore.getState().state;
+    if (shouldCompleteWorkoutOnExit(session, currentState)) {
+      handledCompletionRef.current = true;
+      await completeSession();
+      const completedState = useWorkoutStore.getState().state;
+      const record = buildWorkoutRecord(session, completedState, 'COMPLETED');
+      try {
+        await saveWorkoutRecord(record);
+        await clearSession();
+        router.replace(`/complete?recordId=${record.id}&sessionId=${session.id}`);
+      } catch (error) {
+        Alert.alert('湲곕줉 ????ㅻ쪟', '?대룞 湲곕줉????ν븯吏 紐삵뻽?듬땲??');
+        if (__DEV__) console.error(error);
+      }
+      return;
+    }
     await cancelSession();
     const cancelledState = useWorkoutStore.getState().state;
     const record = buildWorkoutRecord(session, cancelledState, 'CANCELLED');
@@ -204,6 +222,8 @@ export default function WorkoutScreen() {
   const isRest = currentStep?.type === 'REST' || currentStep?.type === 'COOLDOWN';
   const isPrepare = currentStep?.type === 'PREPARE';
   const activeColor = isRest ? colors.accent : colors.primary;
+  const currentStepNumber = Math.min(session.steps.length, engineState.currentStepIndex + 1);
+  const stepProgressLabel = `${currentStepNumber} / ${session.steps.length} 단계`;
   const phaseLabel =
     snapshot.status === 'PAUSED'
       ? '일시정지'
@@ -228,7 +248,9 @@ export default function WorkoutScreen() {
 
         <View style={styles.phaseBlock}>
           <View style={[styles.phasePill, { backgroundColor: isRest ? colors.accentSoft : colors.surfaceAlt }]}>
-            <Text style={[styles.phaseText, { color: activeColor }]}>{phaseLabel}</Text>
+            <Text style={[styles.phaseText, { color: activeColor }]}>
+              {phaseLabel} · {stepProgressLabel}
+            </Text>
           </View>
           <Text numberOfLines={2} style={styles.stepTitle}>
             {currentStep?.title ?? session.title}

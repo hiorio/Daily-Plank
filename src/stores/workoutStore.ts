@@ -33,6 +33,7 @@ interface WorkoutStore {
   moveToNextStep: () => Promise<void>;
   moveToPreviousStep: () => Promise<void>;
   cancelSession: () => Promise<void>;
+  completeSession: () => Promise<void>;
   clearSession: () => Promise<void>;
   tick: (now?: number) => Promise<void>;
   persistActiveWorkout: () => Promise<void>;
@@ -128,6 +129,11 @@ export const useWorkoutStore = create<WorkoutStore>((set, get) => ({
   },
   cancelSession: async () => {
     const nextState = engine.cancelSession();
+    set({ state: nextState });
+    await persistState(nextState);
+  },
+  completeSession: async () => {
+    const nextState = engine.completeSession();
     set({ state: nextState });
     await persistState(nextState);
   },
