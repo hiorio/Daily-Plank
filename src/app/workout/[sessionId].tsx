@@ -247,7 +247,7 @@ export default function WorkoutScreen() {
         <WorkoutProgress progressRate={snapshot.progressRate} resting={isRest} />
 
         <View style={styles.phaseBlock}>
-          <View style={[styles.phasePill, { backgroundColor: isRest ? colors.accentSoft : colors.surfaceAlt }]}>
+          <View style={styles.phasePill}>
             <Text style={[styles.phaseText, { color: activeColor }]}>
               {phaseLabel} · {stepProgressLabel}
             </Text>
@@ -346,9 +346,8 @@ const styles = StyleSheet.create({
   },
   phasePill: {
     alignSelf: 'flex-start',
-    borderRadius: 999,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.xs,
+    minHeight: 18,
+    justifyContent: 'center',
   },
   phaseText: {
     fontSize: 12,
