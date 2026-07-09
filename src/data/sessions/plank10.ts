@@ -43,6 +43,7 @@ export const plank10Session: WorkoutSession = {
       durationSeconds: 55,
       startMessage: '마지막 긴 플랭크를 시작한다.',
       cues: [
+        { elapsedSeconds: 37, message: '이제 거의 다 왔어요. 조금만 힘내세요.', cueType: 'VOICE' },
         { remainingSeconds: 10, message: '마지막 10초이다.', cueType: 'VOICE' },
         {
           remainingSeconds: COUNTDOWN_TRACK_START_SECONDS,

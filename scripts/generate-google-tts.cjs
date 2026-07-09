@@ -10,8 +10,9 @@ const {
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const GOOGLE_TTS_URL = 'https://texttospeech.googleapis.com/v1/text:synthesize';
 const COUNTDOWN_TRACK_MESSAGE = '5 4 3 2 1';
-const COUNTDOWN_TRACK_SSML =
-  '<speak>오<break time="740ms"/>사<break time="740ms"/>삼<break time="740ms"/>이<break time="740ms"/>일</speak>';
+const COUNTDOWN_TRACK_VOICE = 'ko-KR-Chirp3-HD-Aoede';
+const COUNTDOWN_TRACK_DIRECTORY = voiceIdToDirectoryName(COUNTDOWN_TRACK_VOICE);
+const COUNTDOWN_TRACK_FILE_NAME = '00-countdown-5.wav';
 const DEFAULT_VOICES = [
   'ko-KR-Chirp3-HD-Aoede',
   'ko-KR-Chirp3-HD-Kore',
@@ -152,6 +153,22 @@ async function generateVoicePack({ accessToken, messages, voiceName }) {
   const entries = [];
 
   for (const [index, message] of messages.entries()) {
+    if (message === COUNTDOWN_TRACK_MESSAGE) {
+      const countdownPath = path.join(rootDir, 'src/assets/tts', COUNTDOWN_TRACK_DIRECTORY, COUNTDOWN_TRACK_FILE_NAME);
+      if (!fs.existsSync(countdownPath)) {
+        throw new Error(
+          `Common countdown track is missing. Run scripts/generate-countdown-tracks.cjs first.`,
+        );
+      }
+      entries.push({
+        message,
+        fileName: COUNTDOWN_TRACK_FILE_NAME,
+        directoryName: COUNTDOWN_TRACK_DIRECTORY,
+      });
+      console.log(`${voiceName}: countdown ${COUNTDOWN_TRACK_DIRECTORY}/${COUNTDOWN_TRACK_FILE_NAME}`);
+      continue;
+    }
+
     const fileName = `${String(index + 1).padStart(2, '0')}-${hashMessage(message)}.mp3`;
     const outputPath = path.join(outputDir, fileName);
 
@@ -160,7 +177,7 @@ async function generateVoicePack({ accessToken, messages, voiceName }) {
       fs.writeFileSync(outputPath, Buffer.from(audioContent, 'base64'));
     }
 
-    entries.push({ message, fileName });
+    entries.push({ message, fileName, directoryName });
     console.log(`${voiceName}: ${index + 1}/${messages.length} ${fileName}`);
   }
 
@@ -208,10 +225,6 @@ async function synthesizeSpeech({ accessToken, text, voiceName }) {
 }
 
 function getTtsInput(text) {
-  if (text === COUNTDOWN_TRACK_MESSAGE) {
-    return { ssml: COUNTDOWN_TRACK_SSML };
-  }
-
   return { text };
 }
 
@@ -249,7 +262,7 @@ function writeCombinedManifest(voicePacks) {
     lines.push(`  ${JSON.stringify(voicePack.voiceName)}: {`);
     for (const entry of voicePack.entries) {
       lines.push(
-        `    ${JSON.stringify(entry.message)}: require('./${voicePack.directoryName}/${entry.fileName}'),`,
+        `    ${JSON.stringify(entry.message)}: require('./${entry.directoryName}/${entry.fileName}'),`,
       );
     }
     lines.push('  },');

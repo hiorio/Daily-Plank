@@ -6,6 +6,7 @@ import {
 } from './AudioCueTiming';
 import {
   COUNTDOWN_TRACK_MESSAGE,
+  COUNTDOWN_TRACK_PLAYBACK_MS,
   COUNTDOWN_TRACK_START_SECONDS,
 } from '../domain/countdown';
 
@@ -39,7 +40,27 @@ describe('getTimedCueState', () => {
     expect(getTimedCueState(cue, 0, 30_000, 3_701)).toBe('EXPIRED');
   });
 
-  it('schedules one 5 second countdown track at the countdown boundary', () => {
+  it('schedules one countdown track before the five-second boundary', () => {
+    const cues = [
+      {
+        remainingSeconds: COUNTDOWN_TRACK_START_SECONDS,
+        message: COUNTDOWN_TRACK_MESSAGE,
+        cueType: 'VOICE' as const,
+      },
+    ];
+
+    const schedule = getCountdownCueSchedule(cues, 10_000, 0);
+
+    expect(schedule).toHaveLength(1);
+    expect(schedule[0]!).toMatchObject({
+      delayMs: 10_000 - COUNTDOWN_TRACK_PLAYBACK_MS,
+      message: COUNTDOWN_TRACK_MESSAGE,
+      remainingSeconds: COUNTDOWN_TRACK_START_SECONDS,
+      targetAt: 10_000 - COUNTDOWN_TRACK_PLAYBACK_MS,
+    });
+  });
+
+  it('starts the countdown track from the beginning when slightly late', () => {
     const cues = [
       {
         remainingSeconds: COUNTDOWN_TRACK_START_SECONDS,
@@ -53,26 +74,8 @@ describe('getTimedCueState', () => {
     expect(schedule).toHaveLength(1);
     expect(schedule[0]!).toMatchObject({
       delayMs: 0,
-      message: COUNTDOWN_TRACK_MESSAGE,
-      remainingSeconds: COUNTDOWN_TRACK_START_SECONDS,
-      seekOffsetMs: 0,
-      targetAt: 5_000,
+      targetAt: 10_000 - COUNTDOWN_TRACK_PLAYBACK_MS,
     });
-  });
-
-  it('uses seek offset when the countdown track starts slightly late', () => {
-    const cues = [
-      {
-        remainingSeconds: COUNTDOWN_TRACK_START_SECONDS,
-        message: COUNTDOWN_TRACK_MESSAGE,
-        cueType: 'VOICE' as const,
-      },
-    ];
-
-    const schedule = getCountdownCueSchedule(cues, 10_000, 5_250);
-
-    expect(schedule).toHaveLength(1);
-    expect(schedule[0]!.seekOffsetMs).toBe(250);
   });
 
   it('does not start a stale countdown track too late', () => {

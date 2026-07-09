@@ -1,6 +1,5 @@
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer, type AudioSource } from 'expo-audio';
 import * as Speech from 'expo-speech';
-import { SpeechOptions, Voice, VoiceQuality } from 'expo-speech';
 import { Platform } from 'react-native';
 import type { WorkoutCue, WorkoutStep } from '../domain/workoutSession';
 import { AppSettings, defaultTtsVoiceId, TtsVoiceId } from '../domain/settings';
@@ -8,6 +7,7 @@ import { HapticManager } from './HapticManager';
 import beepSource from '../assets/sounds/beep.wav';
 import { polishSpeechMessage } from './speechText';
 import { generatedTtsAssets } from '../assets/tts/googleTtsAssets';
+import { COUNTDOWN_TRACK_MESSAGE, COUNTDOWN_TRACK_PLAYBACK_MS } from '../domain/countdown';
 import {
   getCountdownCueSchedule,
   getTimedCueState,
@@ -28,7 +28,7 @@ export class AudioCueManager {
   private speechQueue: QueuedSpeech[] = [];
   private speechBusy = false;
   private speechEpoch = 0;
-  private preferredVoicePromise: Promise<string | undefined> | null = null;
+  private countdownEpoch = 0;
   private player: AudioPlayer | null = null;
   private generatedSpeechPlayer: AudioPlayer | null = null;
   private resolveGeneratedSpeech: (() => void) | null = null;
@@ -158,10 +158,11 @@ export class AudioCueManager {
     ]);
   }
 
-  private async interruptSpeech(): Promise<void> {
+  private async interruptSpeech(options: { clearCountdownTimers?: boolean } = {}): Promise<void> {
+    const clearCountdownTimers = options.clearCountdownTimers ?? true;
     this.speechEpoch += 1;
     this.speechQueue = [];
-    this.clearCountdownTimers();
+    if (clearCountdownTimers) this.clearCountdownTimers();
     this.stopGeneratedSpeech();
     try {
       await Speech.stop();
@@ -177,7 +178,7 @@ export class AudioCueManager {
   ): Promise<void> {
     const trimmedMessage = polishSpeechMessage(message);
     if (!settings.voiceEnabled || !trimmedMessage) return;
-    if (options?.preempt) await this.interruptSpeech();
+    if (options?.preempt) await this.interruptSpeech({ clearCountdownTimers: false });
     if (options?.skipIfBusy && (this.speechBusy || this.speechQueue.length > 0)) return;
     this.speechQueue.push({ message: trimmedMessage, voiceId: settings.ttsVoiceId });
     await this.processSpeechQueue();
@@ -202,26 +203,34 @@ export class AudioCueManager {
       this.spokenCueKeys.add(getSpokenCueKey(step.id, cue.cue));
     }
 
-    await this.interruptSpeech();
-    const epoch = this.speechEpoch;
+    const countdownEpoch = this.countdownEpoch;
 
     for (const cue of countdownCues) {
       const timeout = setTimeout(() => {
-        if (epoch !== this.speechEpoch) return;
-        void this.playCountdownTrack(cue.message, settings.ttsVoiceId, cue.seekOffsetMs, epoch);
+        if (countdownEpoch !== this.countdownEpoch) return;
+        void this.startCountdownTrack(cue.message, settings.ttsVoiceId, countdownEpoch);
       }, cue.delayMs);
       this.countdownTimeouts.push(timeout);
     }
   }
 
+  private async startCountdownTrack(
+    message: string,
+    voiceId: TtsVoiceId,
+    scheduledCountdownEpoch: number,
+  ): Promise<void> {
+    if (scheduledCountdownEpoch !== this.countdownEpoch) return;
+    await this.interruptSpeech({ clearCountdownTimers: false });
+    await this.playCountdownTrack(message, voiceId, this.speechEpoch);
+  }
+
   private async playCountdownTrack(
     message: string,
     voiceId: TtsVoiceId,
-    seekOffsetMs: number,
     epoch: number,
   ): Promise<void> {
     if (epoch !== this.speechEpoch) return;
-    const generatedSpeechPlayed = await this.playGeneratedSpeech(message, voiceId, seekOffsetMs);
+    const generatedSpeechPlayed = await this.playGeneratedSpeech(message, voiceId);
     if (!generatedSpeechPlayed && __DEV__) {
       console.warn(`Countdown track is missing for voice ${voiceId}.`);
     }
@@ -255,45 +264,9 @@ export class AudioCueManager {
     if (epoch !== this.speechEpoch) return;
     if (generatedSpeechPlayed) return;
 
-    const voice = await this.getPreferredKoreanVoice();
-    if (epoch !== this.speechEpoch) return;
-    await new Promise<void>((resolve) => {
-      try {
-        const options: SpeechOptions = {
-          language: 'ko-KR',
-          pitch: 1,
-          rate: this.getNaturalRate(message),
-          volume: 1,
-          onDone: () => resolve(),
-          onStopped: () => resolve(),
-          onError: () => resolve(),
-        };
-        if (voice) options.voice = voice;
-        Speech.speak(message, options);
-      } catch (error) {
-        if (__DEV__) console.warn('Speech failed', error);
-        resolve();
-      }
-    });
-  }
-
-  private getPreferredKoreanVoice(): Promise<string | undefined> {
-    if (!this.preferredVoicePromise) {
-      this.preferredVoicePromise = Speech.getAvailableVoicesAsync()
-        .then((voices) => selectPreferredKoreanVoice(voices))
-        .catch((error) => {
-          if (__DEV__) console.warn('Korean voice lookup failed', error);
-          return undefined;
-        });
+    if (__DEV__) {
+      console.warn(`Generated speech is missing or failed. System TTS fallback is disabled: ${message}`);
     }
-    return this.preferredVoicePromise;
-  }
-
-  private getNaturalRate(message: string): number {
-    if (/^[0-9]+$/.test(message)) return 1;
-    if (message.length <= 6) return 0.92;
-    if (message.length <= 18) return 0.9;
-    return 0.88;
   }
 
   private async playSound(enabled: boolean): Promise<void> {
@@ -311,7 +284,6 @@ export class AudioCueManager {
   private async playGeneratedSpeech(
     message: string,
     voiceId: TtsVoiceId,
-    seekOffsetMs = 0,
   ): Promise<boolean> {
     const voicePack = generatedTtsAssets[voiceId] ?? generatedTtsAssets[defaultTtsVoiceId];
     const fallbackVoicePack = generatedTtsAssets[defaultTtsVoiceId];
@@ -320,7 +292,7 @@ export class AudioCueManager {
 
     try {
       await ensurePlaybackAudioMode();
-      await this.playAudioSource(source, message, seekOffsetMs);
+      await this.playAudioSource(source, message);
       return true;
     } catch (error) {
       if (__DEV__) console.warn('Generated speech playback failed', error);
@@ -331,7 +303,6 @@ export class AudioCueManager {
   private async playAudioSource(
     source: AudioSource,
     message: string,
-    seekOffsetMs = 0,
   ): Promise<void> {
     this.stopGeneratedSpeech();
 
@@ -393,14 +364,7 @@ export class AudioCueManager {
         }
       };
 
-      const seekOffsetSeconds = Math.max(0, seekOffsetMs / 1000);
-      if (seekOffsetSeconds > 0) {
-        player.seekTo(seekOffsetSeconds).then(startPlayback).catch((error) => {
-          rejectPlayback(error instanceof Error ? error : new Error('Generated speech seek failed.'));
-        });
-      } else {
-        startPlayback();
-      }
+      startPlayback();
 
       const fallbackDurationMs = Math.max(
         estimateSpeechDurationMs(message),
@@ -421,6 +385,7 @@ export class AudioCueManager {
   }
 
   private clearCountdownTimers(): void {
+    this.countdownEpoch += 1;
     for (const timeout of this.countdownTimeouts) {
       clearTimeout(timeout);
     }
@@ -447,6 +412,8 @@ function ensurePlaybackAudioMode(): Promise<void> {
 }
 
 function estimateSpeechDurationMs(message: string): number {
+  if (message === COUNTDOWN_TRACK_MESSAGE) return COUNTDOWN_TRACK_PLAYBACK_MS + 1500;
+
   const digitOnly = /^[0-9]+$/.test(message);
   if (digitOnly) return 1600;
 
@@ -459,29 +426,4 @@ function getSpokenCueKey(
   cue: Pick<WorkoutCue, 'elapsedSeconds' | 'message' | 'remainingSeconds'>,
 ): string {
   return `${stepId}:${cue.elapsedSeconds ?? 'r'}:${cue.remainingSeconds ?? 'e'}:${cue.message}`;
-}
-
-function selectPreferredKoreanVoice(voices: Voice[]): string | undefined {
-  const koreanVoices = voices.filter((voice) => voice.language.toLowerCase().startsWith('ko'));
-  if (koreanVoices.length === 0) return undefined;
-
-  return [...koreanVoices].sort((left, right) => scoreVoice(right) - scoreVoice(left))[0]?.identifier;
-}
-
-function scoreVoice(voice: Voice): number {
-  const name = voice.name.toLowerCase();
-  let score = 0;
-
-  if (voice.quality === VoiceQuality.Enhanced) score += 50;
-  if ('localService' in voice && voice.localService) score += 20;
-  if ('isDefault' in voice && voice.isDefault) score += 15;
-  if (name.includes('premium')) score += 18;
-  if (name.includes('neural')) score += 16;
-  if (name.includes('natural')) score += 14;
-  if (name.includes('siri')) score += 12;
-  if (name.includes('google')) score += 10;
-  if (name.includes('microsoft')) score += 8;
-  if (name.includes('yuna') || name.includes('heami') || name.includes('sunhi')) score += 6;
-
-  return score;
 }

@@ -15,11 +15,19 @@ export function addLocalDays(date: Date, days: number): Date {
   return next;
 }
 
+export function addLocalMonths(date: Date, months: number): Date {
+  return new Date(date.getFullYear(), date.getMonth() + months, 1);
+}
+
 export function startOfLocalWeek(date: Date): Date {
   const start = startOfLocalDay(date);
   const day = start.getDay();
   const diff = day === 0 ? -6 : 1 - day;
   return addLocalDays(start, diff);
+}
+
+export function startOfLocalMonth(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
 }
 
 export function isDateInCurrentLocalWeek(dateIso: string, now: Date): boolean {

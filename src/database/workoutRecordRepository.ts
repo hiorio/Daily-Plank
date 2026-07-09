@@ -68,6 +68,19 @@ export async function getRecentWorkoutRecords(limit = 30): Promise<WorkoutRecord
   return rows.map(fromRow);
 }
 
+export async function getWorkoutRecordsBetween(startIso: string, endIso: string, limit = 500): Promise<WorkoutRecord[]> {
+  const db = await getDatabase();
+  const rows = await db.getAllAsync<WorkoutRecordRow>(
+    `SELECT * FROM workout_record
+     WHERE COALESCE(completed_at, started_at) >= ?
+       AND COALESCE(completed_at, started_at) < ?
+     ORDER BY COALESCE(completed_at, started_at) DESC
+     LIMIT ?`,
+    [startIso, endIso, limit],
+  );
+  return rows.map(fromRow);
+}
+
 export async function getWorkoutRecordById(recordId: string): Promise<WorkoutRecord | null> {
   const db = await getDatabase();
   const row = await db.getFirstAsync<WorkoutRecordRow>(

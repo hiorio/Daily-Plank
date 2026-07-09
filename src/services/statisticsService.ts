@@ -1,4 +1,5 @@
 import { WorkoutRecord } from '../domain/workoutRecord';
+import { getWorkoutRecordDate } from './historySummaryService';
 import { countConsecutiveWorkoutDays, isDateInCurrentLocalWeek, toLocalDateKey } from '../utils/date';
 
 export interface WorkoutStatistics {
@@ -11,8 +12,10 @@ export interface WorkoutStatistics {
 export function calculateWorkoutStatistics(records: WorkoutRecord[], now = new Date()): WorkoutStatistics {
   const completedRecords = records.filter((record) => record.status === 'COMPLETED');
   const todayKey = toLocalDateKey(now);
-  const weeklyRecords = completedRecords.filter((record) => isDateInCurrentLocalWeek(record.startedAt, now));
-  const completedDateKeys = completedRecords.map((record) => toLocalDateKey(new Date(record.startedAt)));
+  const weeklyRecords = completedRecords.filter((record) =>
+    isDateInCurrentLocalWeek(getWorkoutRecordDate(record).toISOString(), now),
+  );
+  const completedDateKeys = completedRecords.map((record) => toLocalDateKey(getWorkoutRecordDate(record)));
 
   return {
     hasWorkedOutToday: completedDateKeys.includes(todayKey),

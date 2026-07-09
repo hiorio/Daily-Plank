@@ -81,6 +81,7 @@ export const plank7Session: WorkoutSession = {
       exerciseId: 'forearm_plank',
       durationSeconds: 40,
       startMessage: '마지막 기본 플랭크를 시작한다.',
+      cues: [{ elapsedSeconds: 22, message: '이제 거의 다 왔어요. 조금만 힘내세요.', cueType: 'VOICE' }],
     },
     { id: 'cooldown_1', type: 'COOLDOWN', title: '마무리 호흡', durationSeconds: 25, startMessage: '운동을 마무리한다.' },
   ],

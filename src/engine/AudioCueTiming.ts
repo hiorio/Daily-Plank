@@ -1,6 +1,7 @@
 import type { WorkoutCue } from '../domain/workoutSession';
 import {
   COUNTDOWN_TRACK_MESSAGE,
+  COUNTDOWN_TRACK_PLAYBACK_MS,
   COUNTDOWN_TRACK_START_SECONDS,
 } from '../domain/countdown';
 import { polishSpeechMessage } from './speechText';
@@ -16,7 +17,6 @@ export interface ScheduledCountdownCue {
   delayMs: number;
   message: string;
   remainingSeconds: number;
-  seekOffsetMs: number;
   targetAt: number;
 }
 
@@ -64,11 +64,20 @@ export function getCountdownCueSchedule(
   );
   if (!countdownCue) return [];
 
-  const targetAt = stepEndsAt - countdownCue.remainingSeconds * 1000;
-  if (now < targetAt) return [];
+  const targetAt = stepEndsAt - COUNTDOWN_TRACK_PLAYBACK_MS;
+  if (now < targetAt) {
+    return [
+      {
+        cue: countdownCue,
+        delayMs: targetAt - now,
+        message: COUNTDOWN_TRACK_MESSAGE,
+        remainingSeconds: countdownCue.remainingSeconds,
+        targetAt,
+      },
+    ];
+  }
 
-  const seekOffsetMs = now - targetAt;
-  if (seekOffsetMs > toleranceMs) return [];
+  if (now - targetAt > toleranceMs) return [];
 
   return [
     {
@@ -76,7 +85,6 @@ export function getCountdownCueSchedule(
       delayMs: 0,
       message: COUNTDOWN_TRACK_MESSAGE,
       remainingSeconds: countdownCue.remainingSeconds,
-      seekOffsetMs,
       targetAt,
     },
   ];

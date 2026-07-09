@@ -20,7 +20,8 @@ export const generatedTtsVoiceOptions: GeneratedTtsVoiceOption[] = [
 export const generatedTtsAssets: Record<TtsVoiceId, Record<string, AudioSource>> = {
   "ko-KR-Chirp3-HD-Aoede": {
     "운동을 준비해 주세요.": require('./ko-kr-chirp3-hd-aoede/01-41e4f926c803.mp3'),
-    "5 4 3 2 1": require('./ko-kr-chirp3-hd-aoede/02-361927c16c88.mp3'),
+    "5 4 3 2 1": require('./ko-kr-chirp3-hd-aoede/00-countdown-5.wav'),
+    "이제 거의 다 왔어요. 조금만 힘내세요.": require('./ko-kr-chirp3-hd-aoede/52-0d5a22f35535.mp3'),
     "첫 번째 동작은 니 플랭크입니다.": require('./ko-kr-chirp3-hd-aoede/03-6407e8987997.mp3'),
     "복부에 힘을 주고 몸을 길게 유지해 주세요.": require('./ko-kr-chirp3-hd-aoede/04-4985e3d16160.mp3'),
     "10초 남았습니다.": require('./ko-kr-chirp3-hd-aoede/05-b9d12ba98eba.mp3'),
@@ -73,7 +74,8 @@ export const generatedTtsAssets: Record<TtsVoiceId, Record<string, AudioSource>>
   },
   "ko-KR-Chirp3-HD-Kore": {
     "운동을 준비해 주세요.": require('./ko-kr-chirp3-hd-kore/01-41e4f926c803.mp3'),
-    "5 4 3 2 1": require('./ko-kr-chirp3-hd-kore/02-361927c16c88.mp3'),
+    "5 4 3 2 1": require('./ko-kr-chirp3-hd-aoede/00-countdown-5.wav'),
+    "이제 거의 다 왔어요. 조금만 힘내세요.": require('./ko-kr-chirp3-hd-kore/52-0d5a22f35535.mp3'),
     "첫 번째 동작은 니 플랭크입니다.": require('./ko-kr-chirp3-hd-kore/03-6407e8987997.mp3'),
     "복부에 힘을 주고 몸을 길게 유지해 주세요.": require('./ko-kr-chirp3-hd-kore/04-4985e3d16160.mp3'),
     "10초 남았습니다.": require('./ko-kr-chirp3-hd-kore/05-b9d12ba98eba.mp3'),
@@ -126,7 +128,8 @@ export const generatedTtsAssets: Record<TtsVoiceId, Record<string, AudioSource>>
   },
   "ko-KR-Chirp3-HD-Leda": {
     "운동을 준비해 주세요.": require('./ko-kr-chirp3-hd-leda/01-41e4f926c803.mp3'),
-    "5 4 3 2 1": require('./ko-kr-chirp3-hd-leda/02-361927c16c88.mp3'),
+    "5 4 3 2 1": require('./ko-kr-chirp3-hd-aoede/00-countdown-5.wav'),
+    "이제 거의 다 왔어요. 조금만 힘내세요.": require('./ko-kr-chirp3-hd-leda/52-0d5a22f35535.mp3'),
     "첫 번째 동작은 니 플랭크입니다.": require('./ko-kr-chirp3-hd-leda/03-6407e8987997.mp3'),
     "복부에 힘을 주고 몸을 길게 유지해 주세요.": require('./ko-kr-chirp3-hd-leda/04-4985e3d16160.mp3'),
     "10초 남았습니다.": require('./ko-kr-chirp3-hd-leda/05-b9d12ba98eba.mp3'),
@@ -179,7 +182,8 @@ export const generatedTtsAssets: Record<TtsVoiceId, Record<string, AudioSource>>
   },
   "ko-KR-Chirp3-HD-Callirrhoe": {
     "운동을 준비해 주세요.": require('./ko-kr-chirp3-hd-callirrhoe/01-41e4f926c803.mp3'),
-    "5 4 3 2 1": require('./ko-kr-chirp3-hd-callirrhoe/02-361927c16c88.mp3'),
+    "5 4 3 2 1": require('./ko-kr-chirp3-hd-aoede/00-countdown-5.wav'),
+    "이제 거의 다 왔어요. 조금만 힘내세요.": require('./ko-kr-chirp3-hd-callirrhoe/52-0d5a22f35535.mp3'),
     "첫 번째 동작은 니 플랭크입니다.": require('./ko-kr-chirp3-hd-callirrhoe/03-6407e8987997.mp3'),
     "복부에 힘을 주고 몸을 길게 유지해 주세요.": require('./ko-kr-chirp3-hd-callirrhoe/04-4985e3d16160.mp3'),
     "10초 남았습니다.": require('./ko-kr-chirp3-hd-callirrhoe/05-b9d12ba98eba.mp3'),
@@ -232,7 +236,8 @@ export const generatedTtsAssets: Record<TtsVoiceId, Record<string, AudioSource>>
   },
   "ko-KR-Chirp3-HD-Charon": {
     "운동을 준비해 주세요.": require('./ko-kr-chirp3-hd-charon/01-41e4f926c803.mp3'),
-    "5 4 3 2 1": require('./ko-kr-chirp3-hd-charon/02-361927c16c88.mp3'),
+    "5 4 3 2 1": require('./ko-kr-chirp3-hd-aoede/00-countdown-5.wav'),
+    "이제 거의 다 왔어요. 조금만 힘내세요.": require('./ko-kr-chirp3-hd-charon/52-0d5a22f35535.mp3'),
     "첫 번째 동작은 니 플랭크입니다.": require('./ko-kr-chirp3-hd-charon/03-6407e8987997.mp3'),
     "복부에 힘을 주고 몸을 길게 유지해 주세요.": require('./ko-kr-chirp3-hd-charon/04-4985e3d16160.mp3'),
     "10초 남았습니다.": require('./ko-kr-chirp3-hd-charon/05-b9d12ba98eba.mp3'),
@@ -285,7 +290,8 @@ export const generatedTtsAssets: Record<TtsVoiceId, Record<string, AudioSource>>
   },
   "ko-KR-Chirp3-HD-Puck": {
     "운동을 준비해 주세요.": require('./ko-kr-chirp3-hd-puck/01-41e4f926c803.mp3'),
-    "5 4 3 2 1": require('./ko-kr-chirp3-hd-puck/02-361927c16c88.mp3'),
+    "5 4 3 2 1": require('./ko-kr-chirp3-hd-aoede/00-countdown-5.wav'),
+    "이제 거의 다 왔어요. 조금만 힘내세요.": require('./ko-kr-chirp3-hd-puck/52-0d5a22f35535.mp3'),
     "첫 번째 동작은 니 플랭크입니다.": require('./ko-kr-chirp3-hd-puck/03-6407e8987997.mp3'),
     "복부에 힘을 주고 몸을 길게 유지해 주세요.": require('./ko-kr-chirp3-hd-puck/04-4985e3d16160.mp3'),
     "10초 남았습니다.": require('./ko-kr-chirp3-hd-puck/05-b9d12ba98eba.mp3'),
