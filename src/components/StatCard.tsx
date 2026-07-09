@@ -21,13 +21,18 @@ export function StatCard({ label, value, icon }: StatCardProps) {
 const styles = StyleSheet.create({
   card: {
     flex: 1,
-    minHeight: 96,
-    borderRadius: radius.md,
+    minHeight: 104,
+    borderRadius: radius.lg,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: spacing.md,
+    padding: spacing.lg,
     justifyContent: 'center',
+    shadowColor: colors.shadow,
+    shadowOpacity: 1,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 3,
   },
   icon: {
     minHeight: 20,
@@ -35,8 +40,8 @@ const styles = StyleSheet.create({
   },
   value: {
     color: colors.text,
-    fontSize: 20,
-    fontWeight: '800',
+    fontSize: 22,
+    fontWeight: '900',
   },
   label: {
     color: colors.muted,

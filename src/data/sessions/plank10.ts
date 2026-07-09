@@ -1,3 +1,4 @@
+import { COUNTDOWN_TRACK_MESSAGE, COUNTDOWN_TRACK_START_SECONDS } from '../../domain/countdown';
 import { WorkoutSession } from '../../domain/workoutSession';
 
 export const plank10Session: WorkoutSession = {
@@ -43,9 +44,11 @@ export const plank10Session: WorkoutSession = {
       startMessage: '마지막 긴 플랭크를 시작한다.',
       cues: [
         { remainingSeconds: 10, message: '마지막 10초이다.', cueType: 'VOICE' },
-        { remainingSeconds: 3, message: '3', cueType: 'VOICE' },
-        { remainingSeconds: 2, message: '2', cueType: 'VOICE' },
-        { remainingSeconds: 1, message: '1', cueType: 'VOICE' },
+        {
+          remainingSeconds: COUNTDOWN_TRACK_START_SECONDS,
+          message: COUNTDOWN_TRACK_MESSAGE,
+          cueType: 'VOICE',
+        },
       ],
     },
     { id: 'cooldown_1', type: 'COOLDOWN', title: '마무리 호흡', durationSeconds: 35, startMessage: '운동을 완료했다.' },

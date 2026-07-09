@@ -48,26 +48,32 @@ export function ConfirmModal({
 const styles = StyleSheet.create({
   backdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.36)',
+    backgroundColor: 'rgba(15,23,41,0.42)',
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.xl,
   },
   dialog: {
     width: '100%',
-    borderRadius: radius.md,
+    borderRadius: radius.xl,
     backgroundColor: colors.surface,
     padding: spacing.xl,
     gap: spacing.lg,
+    shadowColor: colors.shadow,
+    shadowOpacity: 1,
+    shadowRadius: 28,
+    shadowOffset: { width: 0, height: 16 },
+    elevation: 6,
   },
   title: {
     color: colors.text,
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: '900',
   },
   message: {
     color: colors.muted,
-    lineHeight: 21,
+    lineHeight: 22,
+    fontWeight: '600',
   },
   actions: {
     flexDirection: 'row',
@@ -75,15 +81,15 @@ const styles = StyleSheet.create({
   },
   secondaryButton: {
     flex: 1,
-    minHeight: 48,
+    minHeight: 50,
     borderRadius: radius.md,
-    backgroundColor: colors.surfaceAlt,
+    backgroundColor: colors.mutedSurface,
     alignItems: 'center',
     justifyContent: 'center',
   },
   confirmButton: {
     flex: 1,
-    minHeight: 48,
+    minHeight: 50,
     borderRadius: radius.md,
     backgroundColor: colors.primary,
     alignItems: 'center',
@@ -94,10 +100,10 @@ const styles = StyleSheet.create({
   },
   secondaryText: {
     color: colors.text,
-    fontWeight: '800',
+    fontWeight: '900',
   },
   confirmText: {
     color: '#FFFFFF',
-    fontWeight: '800',
+    fontWeight: '900',
   },
 });

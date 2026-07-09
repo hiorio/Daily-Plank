@@ -42,6 +42,13 @@ export class WorkoutEngine {
     return this.getState();
   }
 
+  private accumulatedPauseMsAt(now: number): number {
+    if (this.state.status !== 'PAUSED' || this.state.pausedAt == null) {
+      return this.state.accumulatedPauseMs;
+    }
+    return this.state.accumulatedPauseMs + Math.max(0, now - this.state.pausedAt);
+  }
+
   startSession(session: WorkoutSession, now = Date.now()): WorkoutEngineState {
     const firstStep = session.steps[0];
     if (!firstStep) {
@@ -96,10 +103,11 @@ export class WorkoutEngine {
     const nextIndex = this.state.currentStepIndex + 1;
     const nextStep = session.steps[nextIndex];
     if (!nextStep) {
-      return this.completeSession();
+      return this.completeSession(now);
     }
 
     const currentStep = session.steps[this.state.currentStepIndex];
+    const accumulatedPauseMs = this.accumulatedPauseMsAt(now);
     this.state = {
       ...this.state,
       status: nextStep.type === 'PREPARE' ? 'COUNTDOWN' : 'RUNNING',
@@ -107,6 +115,7 @@ export class WorkoutEngine {
       stepStartedAt: now,
       stepEndsAt: now + nextStep.durationSeconds * 1000,
       pausedAt: null,
+      accumulatedPauseMs,
       skippedStepCount:
         currentStep?.type === 'EXERCISE' ? this.state.skippedStepCount + 1 : this.state.skippedStepCount,
     };
@@ -122,6 +131,7 @@ export class WorkoutEngine {
     const previousStep = session.steps[previousIndex];
     if (!previousStep) return this.getState();
 
+    const accumulatedPauseMs = this.accumulatedPauseMsAt(now);
     this.state = {
       ...this.state,
       status: previousStep.type === 'PREPARE' ? 'COUNTDOWN' : 'RUNNING',
@@ -129,19 +139,30 @@ export class WorkoutEngine {
       stepStartedAt: now,
       stepEndsAt: now + previousStep.durationSeconds * 1000,
       pausedAt: null,
+      accumulatedPauseMs,
     };
     return this.getState();
   }
 
-  cancelSession(): WorkoutEngineState {
+  cancelSession(now = Date.now()): WorkoutEngineState {
     if (this.state.status === 'IDLE') return this.getState();
-    this.state = { ...this.state, status: 'CANCELLED', pausedAt: null };
+    this.state = {
+      ...this.state,
+      status: 'CANCELLED',
+      pausedAt: null,
+      accumulatedPauseMs: this.accumulatedPauseMsAt(now),
+    };
     return this.getState();
   }
 
-  completeSession(): WorkoutEngineState {
+  completeSession(now = Date.now()): WorkoutEngineState {
     if (this.state.status === 'IDLE') return this.getState();
-    this.state = { ...this.state, status: 'COMPLETED', pausedAt: null };
+    this.state = {
+      ...this.state,
+      status: 'COMPLETED',
+      pausedAt: null,
+      accumulatedPauseMs: this.accumulatedPauseMsAt(now),
+    };
     return this.getState();
   }
 

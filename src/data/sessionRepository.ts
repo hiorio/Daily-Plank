@@ -1,15 +1,11 @@
 import { WorkoutCue, WorkoutSession, WorkoutStep } from '../domain/workoutSession';
+import { COUNTDOWN_TRACK_MESSAGE, COUNTDOWN_TRACK_START_SECONDS } from '../domain/countdown';
 import { validateWorkoutSession } from '../utils/validation';
 import { exerciseById, exercises } from './exercises';
 import { plank10Session } from './sessions/plank10';
 import { plank5Session } from './sessions/plank5';
 import { plank7Session } from './sessions/plank7';
-
-const fiveSecondCue: WorkoutCue = {
-  remainingSeconds: 5,
-  message: '5초 남았다.',
-  cueType: 'VOICE',
-};
+import { polishSpeechMessage } from '../engine/speechText';
 
 function hasVoiceCue(step: WorkoutStep, matcher: (cue: WorkoutCue) => boolean): boolean {
   return (step.cues ?? []).some((cue) => cue.cueType === 'VOICE' && matcher(cue));
@@ -27,7 +23,7 @@ function nextExerciseTitle(session: WorkoutSession, stepIndex: number): string |
 function exerciseGuideMessage(step: WorkoutStep): string | null {
   if (step.type !== 'EXERCISE' || !step.exerciseId) return null;
   const exercise = exerciseById.get(step.exerciseId);
-  return exercise?.activeGuides[0] ?? '자세를 안정적으로 유지한다.';
+  return exercise?.activeGuides[0] ?? '자세를 안정적으로 유지해 주세요.';
 }
 
 function withDefaultStartMessage(
@@ -42,23 +38,23 @@ function withDefaultStartMessage(
     return {
       ...step,
       startMessage: nextTitle
-        ? `운동을 준비한다. 첫 동작은 ${nextTitle}이다.`
-        : '운동을 준비한다.',
+        ? `운동을 준비해 주세요. 첫 동작은 ${nextTitle}입니다.`
+        : '운동을 준비해 주세요.',
     };
   }
 
   if (step.type === 'REST') {
     return {
       ...step,
-      startMessage: nextTitle ? `휴식한다. 다음 동작은 ${nextTitle}이다.` : '휴식한다.',
+      startMessage: nextTitle ? `잠시 쉬어 주세요. 다음 동작은 ${nextTitle}입니다.` : '잠시 쉬어 주세요.',
     };
   }
 
   if (step.type === 'COOLDOWN') {
-    return { ...step, startMessage: '운동을 마무리한다.' };
+    return { ...step, startMessage: '운동을 마무리해 주세요.' };
   }
 
-  return { ...step, startMessage: `${step.title}을 시작한다.` };
+  return { ...step, startMessage: `${step.title}을 시작해 주세요.` };
 }
 
 function withDefaultVoiceCues(
@@ -72,15 +68,14 @@ function withDefaultVoiceCues(
     cues = [...cues, cue];
   };
 
-  const isLastStep = stepIndex === session.steps.length - 1;
   const nextTitle = nextExerciseTitle(session, stepIndex);
   const guideMessage = exerciseGuideMessage(step);
 
-  if ((step.type === 'PREPARE' || step.type === 'REST') && nextTitle && step.durationSeconds >= 8) {
+  if ((step.type === 'PREPARE' || step.type === 'REST') && nextTitle && step.durationSeconds >= 13) {
     addCue(
       {
         elapsedSeconds: Math.min(3, Math.max(1, step.durationSeconds - 5)),
-        message: `다음 동작은 ${nextTitle}이다.`,
+        message: `다음 동작은 ${nextTitle}입니다.`,
         cueType: 'VOICE',
       },
       (cue) => cue.elapsedSeconds != null && cue.message.includes(nextTitle),
@@ -99,41 +94,50 @@ function withDefaultVoiceCues(
     );
   }
 
-  if (step.durationSeconds > 12) {
+  if (step.type === 'EXERCISE' && step.durationSeconds > 12) {
     addCue(
       {
         remainingSeconds: 10,
-        message: '10초 남았다.',
+        message: '10초 남았습니다.',
         cueType: 'VOICE',
       },
       (cue) => cue.remainingSeconds === 10,
     );
   }
 
-  if (step.durationSeconds > 5) {
+  if (step.durationSeconds > COUNTDOWN_TRACK_START_SECONDS) {
     addCue(
-      isLastStep ? { ...fiveSecondCue, message: '세션 완료까지 5초 남았다.' } : fiveSecondCue,
-      (cue) => cue.remainingSeconds === 5,
+      {
+        remainingSeconds: COUNTDOWN_TRACK_START_SECONDS,
+        message: COUNTDOWN_TRACK_MESSAGE,
+        cueType: 'VOICE',
+      },
+      (cue) =>
+        cue.remainingSeconds === COUNTDOWN_TRACK_START_SECONDS &&
+        cue.message === COUNTDOWN_TRACK_MESSAGE,
     );
-  }
-
-  if (step.durationSeconds > 5) {
-    for (const remainingSeconds of [3, 2, 1]) {
-      addCue(
-        {
-          remainingSeconds,
-          message: `${remainingSeconds}`,
-          cueType: 'VOICE',
-        },
-        (cue) => cue.remainingSeconds === remainingSeconds,
-      );
-    }
   }
 
   return {
     ...step,
     cues,
   };
+}
+
+function withPoliteVoiceText(step: WorkoutStep): WorkoutStep {
+  const politeStep: WorkoutStep = { ...step };
+
+  if (step.startMessage) {
+    politeStep.startMessage = polishSpeechMessage(step.startMessage);
+  }
+
+  if (step.cues) {
+    politeStep.cues = step.cues.map((cue) =>
+      cue.cueType === 'VOICE' ? { ...cue, message: polishSpeechMessage(cue.message) } : cue,
+    );
+  }
+
+  return politeStep;
 }
 
 function withDefaultStepGuidance(
@@ -151,7 +155,9 @@ function withDefaultStepGuidance(
 function withDefaultCues(session: WorkoutSession): WorkoutSession {
   return {
     ...session,
-    steps: session.steps.map((step, index) => withDefaultStepGuidance(session, step, index)),
+    steps: session.steps.map((step, index) =>
+      withPoliteVoiceText(withDefaultStepGuidance(session, step, index)),
+    ),
   };
 }
 

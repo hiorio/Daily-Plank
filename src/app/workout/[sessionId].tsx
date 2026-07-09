@@ -41,6 +41,13 @@ export default function WorkoutScreen() {
   const [exitVisible, setExitVisible] = useState(false);
 
   useEffect(() => {
+    const manager = cueManagerRef.current;
+    return () => {
+      manager.dispose();
+    };
+  }, []);
+
+  useEffect(() => {
     if (!session) return;
     if (
       engineState.sessionId === session.id &&
@@ -54,7 +61,7 @@ export default function WorkoutScreen() {
     if (startedSessionRef.current === session.id) return;
     startedSessionRef.current = session.id;
     void startSession(session.id).catch((error) => {
-      Alert.alert('운동 시작 오류', '세션을 시작하지 못했다.');
+      Alert.alert('운동 시작 오류', '세션을 시작하지 못했습니다.');
       if (__DEV__) console.error(error);
       router.replace('/');
     });
@@ -74,18 +81,26 @@ export default function WorkoutScreen() {
   }, [settings.keepAwakeEnabled]);
 
   useEffect(() => {
+    const manager = cueManagerRef.current;
+    if (
+      engineState.status === 'PAUSED' ||
+      engineState.status === 'CANCELLED' ||
+      engineState.status === 'COMPLETED'
+    ) {
+      void manager.stopSpeech();
+      return;
+    }
+
     const currentStep = snapshot.currentStep;
     if (
       !currentStep ||
-      engineState.status === 'PAUSED' ||
       engineState.stepStartedAt == null ||
       engineState.stepEndsAt == null
     ) {
       return;
     }
 
-    const manager = cueManagerRef.current;
-    void manager.playStepStart(currentStep, settings);
+    void manager.playStepStart(currentStep, settings, engineState.stepStartedAt);
     void manager.evaluateStepCues(
       currentStep,
       engineState.stepStartedAt,
@@ -114,29 +129,68 @@ export default function WorkoutScreen() {
     }
 
     void finishCompletedWorkout().catch((error) => {
-      Alert.alert('기록 저장 오류', '운동 기록을 저장하지 못했다.');
+      Alert.alert('기록 저장 오류', '운동 기록을 저장하지 못했습니다.');
       if (__DEV__) console.error(error);
     });
   }, [clearSession, engineState, router, session]);
 
   async function handleExitConfirmed() {
     if (!session) return;
+    await cueManagerRef.current.stopSpeech();
     await cancelSession();
     const cancelledState = useWorkoutStore.getState().state;
     const record = buildWorkoutRecord(session, cancelledState, 'CANCELLED');
     await saveWorkoutRecord(record).catch((error) => {
-      Alert.alert('기록 저장 오류', '취소 기록을 저장하지 못했다.');
+      Alert.alert('기록 저장 오류', '취소 기록을 저장하지 못했습니다.');
       if (__DEV__) console.error(error);
     });
     await clearSession();
     router.replace('/');
   }
 
+  async function handlePrevious() {
+    await cueManagerRef.current.stopSpeech();
+    await moveToPreviousStep();
+  }
+
+  async function handleTogglePause() {
+    await cueManagerRef.current.stopSpeech();
+    if (snapshot.status === 'PAUSED') {
+      await resumeSession();
+      return;
+    }
+    await pauseSession();
+  }
+
+  async function handleNext() {
+    await cueManagerRef.current.stopSpeech();
+    await moveToNextStep();
+  }
+
+  async function handleExitPress() {
+    await cueManagerRef.current.stopSpeech();
+    setExitVisible(true);
+  }
+
   if (!session) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.center}>
-          <Text style={styles.errorText}>존재하지 않는 세션이다.</Text>
+          <Text style={styles.errorText}>존재하지 않는 세션입니다.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (snapshot.status === 'COMPLETED' || engineState.status === 'COMPLETED') {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.completionShell}>
+          <View style={styles.completionPanel}>
+            <Text style={styles.completionEyebrow}>SESSION COMPLETE</Text>
+            <Text style={styles.completionTitle}>운동 기록을 저장하고 있습니다.</Text>
+            <Text style={styles.completionDescription}>곧 완료 화면으로 이동합니다.</Text>
+          </View>
         </View>
       </SafeAreaView>
     );
@@ -149,20 +203,40 @@ export default function WorkoutScreen() {
     snapshot.nextStep?.exerciseId != null ? exerciseById.get(snapshot.nextStep.exerciseId) ?? null : null;
   const isRest = currentStep?.type === 'REST' || currentStep?.type === 'COOLDOWN';
   const isPrepare = currentStep?.type === 'PREPARE';
+  const activeColor = isRest ? colors.accent : colors.primary;
+  const phaseLabel =
+    snapshot.status === 'PAUSED'
+      ? '일시정지'
+      : snapshot.status === 'COUNTDOWN'
+        ? '준비 중'
+        : isRest
+          ? '휴식 구간'
+          : '운동 중';
   const statusLabel =
     snapshot.status === 'COUNTDOWN' ? '준비 카운트다운' : isRest ? '휴식 남은 시간' : '동작 남은 시간';
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.content}>
+    <SafeAreaView style={[styles.safeArea, isRest && styles.restSafeArea]}>
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.topRow}>
           <Text style={styles.totalTime}>
             전체 {formatDuration(snapshot.totalElapsedSeconds)} / {formatDuration(session.totalDurationSeconds)}
           </Text>
-          <Text style={styles.status}>{snapshot.status}</Text>
+          <Text style={[styles.status, { color: activeColor }]}>{phaseLabel}</Text>
         </View>
-        <WorkoutProgress progressRate={snapshot.progressRate} />
-        <WorkoutTimer seconds={snapshot.stepRemainingSeconds} label={statusLabel} />
+        <WorkoutProgress progressRate={snapshot.progressRate} resting={isRest} />
+
+        <View style={styles.phaseBlock}>
+          <View style={[styles.phasePill, { backgroundColor: isRest ? colors.accentSoft : colors.surfaceAlt }]}>
+            <Text style={[styles.phaseText, { color: activeColor }]}>{phaseLabel}</Text>
+          </View>
+          <Text numberOfLines={2} style={styles.stepTitle}>
+            {currentStep?.title ?? session.title}
+          </Text>
+        </View>
+
+        <WorkoutTimer seconds={snapshot.stepRemainingSeconds} label={statusLabel} resting={isRest} />
+
         <ExerciseGuide
           exercise={currentExercise}
           previewExercise={previewExercise}
@@ -174,18 +248,18 @@ export default function WorkoutScreen() {
         <NextStepPreview nextStepTitle={snapshot.nextStep?.title ?? null} />
         <WorkoutControls
           paused={snapshot.status === 'PAUSED'}
-          onPrevious={() => void moveToPreviousStep()}
-          onTogglePause={() => void (snapshot.status === 'PAUSED' ? resumeSession() : pauseSession())}
-          onNext={() => void moveToNextStep()}
-          onExit={() => setExitVisible(true)}
+          onPrevious={() => void handlePrevious()}
+          onTogglePause={() => void handleTogglePause()}
+          onNext={() => void handleNext()}
+          onExit={() => void handleExitPress()}
         />
       </ScrollView>
       <ConfirmModal
         visible={exitVisible}
-        title="운동을 종료할까?"
-        message="지금까지 진행한 내용은 취소 기록으로 저장된다."
+        title="운동을 종료할까요?"
+        message="지금까지 진행한 내용은 취소 기록으로 저장됩니다."
         cancelLabel="운동 계속하기"
-        confirmLabel="운동 종료하기"
+        confirmLabel="운동 종료"
         destructive
         onCancel={() => setExitVisible(false)}
         onConfirm={() => void handleExitConfirmed()}
@@ -195,11 +269,74 @@ export default function WorkoutScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1, backgroundColor: colors.background },
-  content: { padding: spacing.lg, gap: spacing.lg },
+  safeArea: { flex: 1, backgroundColor: colors.surfaceAlt },
+  restSafeArea: { backgroundColor: colors.accentSoft },
+  content: {
+    width: '100%',
+    maxWidth: 430,
+    alignSelf: 'center',
+    padding: spacing.lg,
+    gap: spacing.lg,
+    paddingBottom: spacing.xxl,
+  },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  totalTime: { color: colors.muted, fontWeight: '700' },
-  status: { color: colors.primaryDark, fontWeight: '900' },
+  completionShell: {
+    flex: 1,
+    justifyContent: 'center',
+    padding: spacing.lg,
+  },
+  completionPanel: {
+    width: '100%',
+    maxWidth: 430,
+    alignSelf: 'center',
+    borderRadius: 28,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.xl,
+    gap: spacing.sm,
+    shadowColor: colors.shadow,
+    shadowOpacity: 1,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 3,
+  },
+  completionEyebrow: {
+    color: colors.primary,
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  completionTitle: {
+    color: colors.text,
+    fontSize: 22,
+    fontWeight: '900',
+  },
+  completionDescription: {
+    color: colors.muted,
+    fontWeight: '700',
+    lineHeight: 21,
+  },
+  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
+  totalTime: { color: colors.muted, fontWeight: '800', flex: 1 },
+  status: { fontWeight: '900' },
+  phaseBlock: {
+    gap: spacing.xs,
+  },
+  phasePill: {
+    alignSelf: 'flex-start',
+    borderRadius: 999,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+  },
+  phaseText: {
+    fontSize: 12,
+    fontWeight: '900',
+  },
+  stepTitle: {
+    color: colors.text,
+    fontSize: 25,
+    fontWeight: '900',
+    letterSpacing: 0,
+  },
   errorText: { color: colors.text, fontSize: 18, fontWeight: '800' },
 });

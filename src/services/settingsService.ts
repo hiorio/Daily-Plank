@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AppSettings, defaultSettings } from '../domain/settings';
+import { AppSettings, defaultSettings, isTtsVoiceId } from '../domain/settings';
 
 const SETTINGS_KEY = 'plank-guide:settings';
 
@@ -14,6 +14,7 @@ export async function loadSettings(): Promise<AppSettings> {
     const parsed = JSON.parse(raw) as Partial<AppSettings>;
     return {
       voiceEnabled: isBoolean(parsed.voiceEnabled) ? parsed.voiceEnabled : defaultSettings.voiceEnabled,
+      ttsVoiceId: isTtsVoiceId(parsed.ttsVoiceId) ? parsed.ttsVoiceId : defaultSettings.ttsVoiceId,
       soundEnabled: isBoolean(parsed.soundEnabled) ? parsed.soundEnabled : defaultSettings.soundEnabled,
       hapticEnabled: isBoolean(parsed.hapticEnabled)
         ? parsed.hapticEnabled
