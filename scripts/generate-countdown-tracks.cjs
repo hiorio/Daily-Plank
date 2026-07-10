@@ -8,7 +8,7 @@ const {
 
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const GOOGLE_TTS_URL = 'https://texttospeech.googleapis.com/v1/text:synthesize';
-const DEFAULT_VOICES = ['ko-KR-Chirp3-HD-Aoede'];
+const DEFAULT_VOICES = ['ko-KR-Chirp3-HD-Aoede', 'ko-KR-Chirp3-HD-Orus'];
 
 const DIGITS = [
   { digit: '5', text: '\uC624', startsAtMs: 220 },

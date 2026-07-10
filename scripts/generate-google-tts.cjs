@@ -10,9 +10,12 @@ const {
 const GOOGLE_TOKEN_URL = 'https://oauth2.googleapis.com/token';
 const GOOGLE_TTS_URL = 'https://texttospeech.googleapis.com/v1/text:synthesize';
 const COUNTDOWN_TRACK_MESSAGE = '5 4 3 2 1';
-const COUNTDOWN_TRACK_VOICE = 'ko-KR-Chirp3-HD-Aoede';
-const COUNTDOWN_TRACK_DIRECTORY = voiceIdToDirectoryName(COUNTDOWN_TRACK_VOICE);
+const COMMON_COUNTDOWN_TRACK_VOICE = 'ko-KR-Chirp3-HD-Aoede';
+const COMMON_COUNTDOWN_TRACK_DIRECTORY = voiceIdToDirectoryName(COMMON_COUNTDOWN_TRACK_VOICE);
 const COUNTDOWN_TRACK_FILE_NAME = '00-countdown-5.wav';
+const PER_VOICE_COUNTDOWN_TRACK_VOICES = new Set([
+  'ko-KR-Chirp3-HD-Orus',
+]);
 const DEFAULT_VOICES = [
   'ko-KR-Chirp3-HD-Aoede',
   'ko-KR-Chirp3-HD-Kore',
@@ -164,18 +167,21 @@ async function generateVoicePack({ accessToken, messages, voiceName }) {
 
   for (const [index, message] of messages.entries()) {
     if (message === COUNTDOWN_TRACK_MESSAGE) {
-      const countdownPath = path.join(rootDir, 'src/assets/tts', COUNTDOWN_TRACK_DIRECTORY, COUNTDOWN_TRACK_FILE_NAME);
+      const countdownDirectoryName = PER_VOICE_COUNTDOWN_TRACK_VOICES.has(voiceName)
+        ? directoryName
+        : COMMON_COUNTDOWN_TRACK_DIRECTORY;
+      const countdownPath = path.join(rootDir, 'src/assets/tts', countdownDirectoryName, COUNTDOWN_TRACK_FILE_NAME);
       if (!fs.existsSync(countdownPath)) {
         throw new Error(
-          `Common countdown track is missing. Run scripts/generate-countdown-tracks.cjs first.`,
+          `${countdownDirectoryName}/${COUNTDOWN_TRACK_FILE_NAME} is missing. Run scripts/generate-countdown-tracks.cjs first.`,
         );
       }
       entries.push({
         message,
         fileName: COUNTDOWN_TRACK_FILE_NAME,
-        directoryName: COUNTDOWN_TRACK_DIRECTORY,
+        directoryName: countdownDirectoryName,
       });
-      console.log(`${voiceName}: countdown ${COUNTDOWN_TRACK_DIRECTORY}/${COUNTDOWN_TRACK_FILE_NAME}`);
+      console.log(`${voiceName}: countdown ${countdownDirectoryName}/${COUNTDOWN_TRACK_FILE_NAME}`);
       continue;
     }
 

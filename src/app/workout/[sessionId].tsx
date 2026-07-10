@@ -1,6 +1,6 @@
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ConfirmModal } from '../../components/ConfirmModal';
@@ -11,11 +11,11 @@ import { WorkoutProgress } from '../../components/WorkoutProgress';
 import { WorkoutTimer } from '../../components/WorkoutTimer';
 import { colors, spacing } from '../../constants/theme';
 import { exerciseById } from '../../data/exercises';
-import { getWorkoutSession } from '../../data/sessionRepository';
 import { AudioCueManager } from '../../engine/AudioCueManager';
 import { useWorkoutTimer } from '../../hooks/useWorkoutTimer';
 import { shouldCompleteWorkoutOnExit } from '../../services/workoutExitService';
 import { buildWorkoutRecord, saveWorkoutRecord } from '../../services/workoutRecordService';
+import { useCustomSessionStore } from '../../stores/customSessionStore';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useWorkoutStore } from '../../stores/workoutStore';
 import { formatDuration } from '../../utils/duration';
@@ -25,7 +25,10 @@ const KEEP_AWAKE_TAG = 'plank-guide-workout';
 export default function WorkoutScreen() {
   const router = useRouter();
   const { sessionId } = useLocalSearchParams<{ sessionId: string }>();
-  const session = useMemo(() => (sessionId ? getWorkoutSession(sessionId) : null), [sessionId]);
+  useCustomSessionStore((store) => store.savedSessions);
+  useCustomSessionStore((store) => store.activeByBaseSessionId);
+  const getResolvedSession = useCustomSessionStore((store) => store.getResolvedSession);
+  const resolvedSession = sessionId ? getResolvedSession(sessionId) : null;
   const snapshot = useWorkoutTimer();
   const startSession = useWorkoutStore((store) => store.startSession);
   const pauseSession = useWorkoutStore((store) => store.pauseSession);
@@ -35,12 +38,15 @@ export default function WorkoutScreen() {
   const cancelSession = useWorkoutStore((store) => store.cancelSession);
   const completeSession = useWorkoutStore((store) => store.completeSession);
   const clearSession = useWorkoutStore((store) => store.clearSession);
+  const storedWorkoutSession = useWorkoutStore((store) => store.session);
   const engineState = useWorkoutStore((store) => store.state);
   const settings = useSettingsStore((store) => store.settings);
   const cueManagerRef = useRef(new AudioCueManager());
   const handledCompletionRef = useRef(false);
   const startedSessionRef = useRef<string | null>(null);
   const [exitVisible, setExitVisible] = useState(false);
+  const session =
+    storedWorkoutSession?.id === sessionId ? storedWorkoutSession : resolvedSession;
 
   useEffect(() => {
     const manager = cueManagerRef.current;
@@ -62,7 +68,7 @@ export default function WorkoutScreen() {
     }
     if (startedSessionRef.current === session.id) return;
     startedSessionRef.current = session.id;
-    void startSession(session.id).catch((error) => {
+    void startSession(session).catch((error) => {
       Alert.alert('운동 시작 오류', '세션을 시작하지 못했습니다.');
       if (__DEV__) console.error(error);
       router.replace('/');

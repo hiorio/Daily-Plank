@@ -33,6 +33,10 @@ function loadWorkoutTtsMessages() {
   installTypeScriptHook();
 
   const { workoutSessions } = require(path.join(rootDir, 'src/data/sessionRepository.ts'));
+  const { getCustomSessionTtsMessages } = require(path.join(
+    rootDir,
+    'src/services/sessionGuidanceService.ts',
+  ));
   const messages = [];
 
   for (const session of workoutSessions) {
@@ -45,6 +49,7 @@ function loadWorkoutTtsMessages() {
   }
 
   messages.push(VOICE_PREVIEW_MESSAGE);
+  messages.push(...getCustomSessionTtsMessages());
 
   return [...new Set(messages.map((message) => message.trim()).filter(Boolean))];
 }

@@ -67,9 +67,13 @@ export class AudioCueManager {
       return;
     }
 
+    if (step.type === 'EXERCISE' && settings.soundEnabled) {
+      await this.playSound(settings.soundEnabled);
+      await delay(180);
+    }
+
     await Promise.all([
       this.speak(step.startMessage ?? step.title, settings, { preempt: true }),
-      this.playSound(settings.soundEnabled),
       this.haptics.notify(settings.hapticEnabled),
     ]);
   }
@@ -418,6 +422,12 @@ function estimateSpeechDurationMs(message: string): number {
 
   const estimated = message.length * 190 + 1800;
   return Math.min(15000, Math.max(4500, estimated));
+}
+
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 function getSpokenCueKey(

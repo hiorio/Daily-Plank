@@ -1,12 +1,15 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ConfirmModal } from '../../components/ConfirmModal';
 import { colors, radius, spacing } from '../../constants/theme';
-import { exerciseById } from '../../data/exercises';
+import { exerciseById, exercises } from '../../data/exercises';
 import { getWorkoutSession } from '../../data/sessionRepository';
 import { WorkoutStepType } from '../../domain/workoutSession';
+import { getSafeRestDurations } from '../../services/sessionGuidanceService';
+import { canEditCustomSessions } from '../../services/subscriptionGate';
+import { useCustomSessionStore } from '../../stores/customSessionStore';
 import { formatDurationKorean } from '../../utils/duration';
 
 const levelLabel = {
@@ -25,10 +28,25 @@ const stepTypeLabel: Record<WorkoutStepType, string> = {
 export default function SessionDetailScreen() {
   const router = useRouter();
   const { sessionId } = useLocalSearchParams<{ sessionId: string }>();
-  const session = sessionId ? getWorkoutSession(sessionId) : null;
+  const baseSession = sessionId ? getWorkoutSession(sessionId) : null;
+  const savedSessions = useCustomSessionStore((store) => store.savedSessions);
+  const activeByBaseSessionId = useCustomSessionStore((store) => store.activeByBaseSessionId);
+  const getResolvedSession = useCustomSessionStore((store) => store.getResolvedSession);
+  const replaceExercise = useCustomSessionStore((store) => store.replaceExercise);
+  const setStepDuration = useCustomSessionStore((store) => store.setStepDuration);
+  const resetBaseSession = useCustomSessionStore((store) => store.resetBaseSession);
+  const duplicateActiveSession = useCustomSessionStore((store) => store.duplicateActiveSession);
+  const selectSavedSession = useCustomSessionStore((store) => store.selectSavedSession);
+  const session = sessionId ? getResolvedSession(sessionId) : null;
   const [safetyVisible, setSafetyVisible] = useState(false);
+  const [exercisePickerStepId, setExercisePickerStepId] = useState<string | null>(null);
+  const [durationPickerStepId, setDurationPickerStepId] = useState<string | null>(null);
+  const customSessionsForBase = savedSessions.filter((item) => item.baseSessionId === sessionId);
+  const activeCustomSessionId = sessionId ? activeByBaseSessionId[sessionId] : undefined;
+  const activeCustomSession = customSessionsForBase.find((item) => item.id === activeCustomSessionId);
+  const customizationEnabled = canEditCustomSessions();
 
-  if (!session) {
+  if (!baseSession || !session) {
     return (
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.empty}>
@@ -42,6 +60,34 @@ export default function SessionDetailScreen() {
   }
 
   const exerciseSteps = session.steps.filter((step) => step.type === 'EXERCISE');
+  const selectedExerciseStep = session.steps.find((step) => step.id === exercisePickerStepId);
+  const selectedDurationStep = session.steps.find((step) => step.id === durationPickerStepId);
+
+  async function handleSelectExercise(exerciseId: string) {
+    if (!sessionId || !customizationEnabled) return;
+    const stepId = exercisePickerStepId;
+    setExercisePickerStepId(null);
+    if (!stepId) return;
+    await replaceExercise(sessionId, stepId, exerciseId);
+  }
+
+  async function handleSelectRestDuration(durationSeconds: number) {
+    if (!sessionId || !customizationEnabled) return;
+    const stepId = durationPickerStepId;
+    setDurationPickerStepId(null);
+    if (!stepId) return;
+    await setStepDuration(sessionId, stepId, durationSeconds);
+  }
+
+  async function handleResetSession() {
+    if (!sessionId) return;
+    await resetBaseSession(sessionId);
+  }
+
+  async function handleDuplicateSession() {
+    if (!sessionId || !customizationEnabled) return;
+    await duplicateActiveSession(sessionId);
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -77,8 +123,75 @@ export default function SessionDetailScreen() {
           <Text style={styles.sectionEyebrow}>ROUTINE</Text>
           <Text style={styles.sectionTitle}>운동과 휴식 구성</Text>
         </View>
+        <View style={styles.customPanel}>
+          <View style={styles.customTextBlock}>
+            <Text style={styles.customTitle}>
+              {activeCustomSession ? activeCustomSession.name : '기본 구성'}
+            </Text>
+            <Text style={styles.customDescription}>
+              운동을 누르면 동작을 바꾸고, 휴식을 누르면 시간을 바꿀 수 있습니다.
+            </Text>
+          </View>
+          <View style={styles.customActions}>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => void handleDuplicateSession()}
+              style={({ pressed }) => [styles.smallActionButton, pressed && styles.pressedButton]}
+            >
+              <Text style={styles.smallActionText}>새 구성 저장</Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => void handleResetSession()}
+              style={({ pressed }) => [styles.smallGhostButton, pressed && styles.pressedButton]}
+            >
+              <Text style={styles.smallGhostText}>초기화</Text>
+            </Pressable>
+          </View>
+        </View>
+        {customSessionsForBase.length > 0 ? (
+          <View style={styles.savedPanel}>
+            <Text style={styles.savedTitle}>저장된 구성</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.savedList}>
+              {customSessionsForBase.map((customSession) => {
+                const active = customSession.id === activeCustomSessionId;
+                return (
+                  <Pressable
+                    key={customSession.id}
+                    accessibilityRole="button"
+                    onPress={() => {
+                      if (sessionId) void selectSavedSession(sessionId, customSession.id);
+                    }}
+                    style={({ pressed }) => [
+                      styles.savedChip,
+                      active && styles.savedChipActive,
+                      pressed && styles.pressedButton,
+                    ]}
+                  >
+                    <Text style={[styles.savedChipText, active && styles.savedChipTextActive]}>
+                      {customSession.name}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
+        ) : null}
         {session.steps.map((step, index) => (
-          <View key={step.id} style={styles.stepRow}>
+          <Pressable
+            key={step.id}
+            accessibilityRole={step.type === 'EXERCISE' || step.type === 'REST' ? 'button' : undefined}
+            onPress={() => {
+              if (!customizationEnabled) return;
+              if (step.type === 'EXERCISE') setExercisePickerStepId(step.id);
+              if (step.type === 'REST') setDurationPickerStepId(step.id);
+            }}
+            style={({ pressed }) => [
+              styles.stepRow,
+              (step.type === 'EXERCISE' || step.type === 'REST') && styles.editableStepRow,
+              pressed && (step.type === 'EXERCISE' || step.type === 'REST') && styles.pressedButton,
+            ]}
+          >
             <View style={[styles.stepIndex, step.type !== 'EXERCISE' && styles.restIndex]}>
               <Text style={[styles.stepIndexText, step.type !== 'EXERCISE' && styles.restIndexText]}>{index + 1}</Text>
             </View>
@@ -88,8 +201,10 @@ export default function SessionDetailScreen() {
                 {stepTypeLabel[step.type]} · {formatDurationKorean(step.durationSeconds)}
               </Text>
             </View>
-            <Text style={styles.chevron}>›</Text>
-          </View>
+            <Text style={styles.chevron}>
+              {step.type === 'EXERCISE' ? '변경' : step.type === 'REST' ? '시간' : ' '}
+            </Text>
+          </Pressable>
         ))}
 
         <View style={styles.safetyPanel}>
@@ -124,6 +239,80 @@ export default function SessionDetailScreen() {
           router.push(`/workout/${session.id}`);
         }}
       />
+      <Modal visible={!!exercisePickerStepId} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalPanel}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {selectedExerciseStep?.title ?? '운동'} 변경
+              </Text>
+              <Pressable onPress={() => setExercisePickerStepId(null)} style={styles.modalCloseButton}>
+                <Text style={styles.modalCloseText}>닫기</Text>
+              </Pressable>
+            </View>
+            <ScrollView contentContainerStyle={styles.optionList}>
+              {exercises.map((exercise) => {
+                const selected = selectedExerciseStep?.exerciseId === exercise.id;
+                return (
+                  <Pressable
+                    key={exercise.id}
+                    accessibilityRole="button"
+                    onPress={() => void handleSelectExercise(exercise.id)}
+                    style={({ pressed }) => [
+                      styles.exerciseOption,
+                      selected && styles.exerciseOptionSelected,
+                      pressed && styles.pressedButton,
+                    ]}
+                  >
+                    <View style={styles.exerciseOptionText}>
+                      <Text style={[styles.exerciseOptionTitle, selected && styles.exerciseOptionTitleSelected]}>
+                        {exercise.name}
+                      </Text>
+                      <Text style={styles.exerciseOptionDescription}>{exercise.shortDescription}</Text>
+                    </View>
+                    <Text style={[styles.exerciseDifficulty, selected && styles.exerciseDifficultySelected]}>
+                      난도 {exercise.difficulty}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
+      <Modal visible={!!durationPickerStepId} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.durationPanel}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{selectedDurationStep?.title ?? '휴식'} 시간</Text>
+              <Pressable onPress={() => setDurationPickerStepId(null)} style={styles.modalCloseButton}>
+                <Text style={styles.modalCloseText}>닫기</Text>
+              </Pressable>
+            </View>
+            <View style={styles.durationOptions}>
+              {getSafeRestDurations().map((duration) => {
+                const selected = selectedDurationStep?.durationSeconds === duration;
+                return (
+                  <Pressable
+                    key={duration}
+                    accessibilityRole="button"
+                    onPress={() => void handleSelectRestDuration(duration)}
+                    style={({ pressed }) => [
+                      styles.durationOption,
+                      selected && styles.durationOptionSelected,
+                      pressed && styles.pressedButton,
+                    ]}
+                  >
+                    <Text style={[styles.durationOptionText, selected && styles.durationOptionTextSelected]}>
+                      {duration}초
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -190,6 +379,59 @@ const styles = StyleSheet.create({
   sectionHeader: { marginTop: spacing.sm, gap: spacing.xs },
   sectionEyebrow: { color: colors.muted, fontSize: 12, fontWeight: '900' },
   sectionTitle: { color: colors.text, fontSize: 18, fontWeight: '900' },
+  customPanel: {
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+    gap: spacing.md,
+  },
+  customTextBlock: { gap: spacing.xs },
+  customTitle: { color: colors.text, fontSize: 16, fontWeight: '900' },
+  customDescription: { color: colors.muted, lineHeight: 20, fontWeight: '700' },
+  customActions: { flexDirection: 'row', gap: spacing.sm },
+  smallActionButton: {
+    minHeight: 40,
+    borderRadius: radius.md,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+  },
+  smallActionText: { color: '#FFFFFF', fontWeight: '900' },
+  smallGhostButton: {
+    minHeight: 40,
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceAlt,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+  },
+  smallGhostText: { color: colors.text, fontWeight: '900' },
+  savedPanel: {
+    gap: spacing.sm,
+  },
+  savedTitle: { color: colors.muted, fontSize: 12, fontWeight: '900' },
+  savedList: { gap: spacing.sm, paddingRight: spacing.lg },
+  savedChip: {
+    minHeight: 38,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+  },
+  savedChipActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  savedChipText: { color: colors.text, fontWeight: '800' },
+  savedChipTextActive: { color: '#FFFFFF' },
   stepRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -199,6 +441,9 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  editableStepRow: {
+    borderColor: colors.primarySoft,
   },
   stepIndex: {
     width: 30,
@@ -214,7 +459,7 @@ const styles = StyleSheet.create({
   stepBody: { flex: 1, minWidth: 0 },
   stepTitle: { color: colors.text, fontWeight: '900' },
   stepMeta: { color: colors.muted, marginTop: spacing.xs, fontSize: 12, fontWeight: '700' },
-  chevron: { color: colors.muted, fontSize: 22, fontWeight: '900' },
+  chevron: { color: colors.primary, fontSize: 12, fontWeight: '900', minWidth: 34, textAlign: 'right' },
   cautionRow: { flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-start' },
   cautionMarker: { color: colors.warning, fontWeight: '900' },
   caution: { flex: 1, color: colors.muted, lineHeight: 20 },
@@ -250,4 +495,87 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   primaryText: { color: '#FFFFFF', fontWeight: '900' },
+  pressedButton: { opacity: 0.72 },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15,23,42,0.35)',
+    justifyContent: 'flex-end',
+  },
+  modalPanel: {
+    width: '100%',
+    maxHeight: '82%',
+    maxWidth: 430,
+    alignSelf: 'center',
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    backgroundColor: colors.background,
+    padding: spacing.lg,
+    gap: spacing.md,
+  },
+  durationPanel: {
+    width: '100%',
+    maxWidth: 430,
+    alignSelf: 'center',
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    backgroundColor: colors.background,
+    padding: spacing.lg,
+    gap: spacing.md,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  modalTitle: { color: colors.text, fontSize: 18, fontWeight: '900', flex: 1 },
+  modalCloseButton: {
+    minHeight: 38,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+  },
+  modalCloseText: { color: colors.text, fontWeight: '900' },
+  optionList: { gap: spacing.sm, paddingBottom: spacing.lg },
+  exerciseOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    borderRadius: radius.lg,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.md,
+  },
+  exerciseOptionSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.surfaceAlt,
+  },
+  exerciseOptionText: { flex: 1, minWidth: 0, gap: spacing.xs },
+  exerciseOptionTitle: { color: colors.text, fontWeight: '900' },
+  exerciseOptionTitleSelected: { color: colors.primary },
+  exerciseOptionDescription: { color: colors.muted, lineHeight: 19, fontSize: 12, fontWeight: '700' },
+  exerciseDifficulty: { color: colors.muted, fontSize: 12, fontWeight: '900' },
+  exerciseDifficultySelected: { color: colors.primary },
+  durationOptions: { flexDirection: 'row', gap: spacing.md },
+  durationOption: {
+    flex: 1,
+    minHeight: 52,
+    borderRadius: radius.md,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  durationOptionSelected: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
+  },
+  durationOptionText: { color: colors.text, fontSize: 16, fontWeight: '900' },
+  durationOptionTextSelected: { color: '#FFFFFF' },
 });

@@ -5,13 +5,16 @@ import { SessionCard } from '../components/SessionCard';
 import { StatCard } from '../components/StatCard';
 import { appCopy } from '../constants/copy';
 import { colors, radius, spacing } from '../constants/theme';
-import { getWorkoutSessions } from '../data/sessionRepository';
 import { useWorkoutStatistics } from '../hooks/useWorkoutStatistics';
+import { useCustomSessionStore } from '../stores/customSessionStore';
 import { formatDurationKorean } from '../utils/duration';
 
 export default function HomeScreen() {
   const router = useRouter();
-  const sessions = getWorkoutSessions();
+  useCustomSessionStore((store) => store.savedSessions);
+  useCustomSessionStore((store) => store.activeByBaseSessionId);
+  const getResolvedSessions = useCustomSessionStore((store) => store.getResolvedSessions);
+  const sessions = getResolvedSessions();
   const { statistics } = useWorkoutStatistics();
   const today = new Date().toLocaleDateString('ko-KR', {
     month: 'long',
