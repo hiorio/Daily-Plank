@@ -1,3 +1,4 @@
+import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,6 +16,7 @@ const statusLabel: Record<DiagnosticItem['status'], string> = {
 };
 
 export default function DiagnosticsScreen() {
+  const router = useRouter();
   const [report, setReport] = useState<DiagnosticsReport | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -29,11 +31,18 @@ export default function DiagnosticsScreen() {
   }, []);
 
   useEffect(() => {
+    if (!__DEV__) {
+      router.replace('/settings');
+      return undefined;
+    }
+
     const timeout = setTimeout(() => {
       void runDiagnostics();
     }, 0);
     return () => clearTimeout(timeout);
-  }, [runDiagnostics]);
+  }, [router, runDiagnostics]);
+
+  if (!__DEV__) return null;
 
   const failedCount = report?.items.filter((item) => item.status === 'FAIL').length ?? 0;
   const warningCount = report?.items.filter((item) => item.status === 'WARN').length ?? 0;

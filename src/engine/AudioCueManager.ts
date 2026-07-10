@@ -1,18 +1,18 @@
 import { createAudioPlayer, setAudioModeAsync, type AudioPlayer, type AudioSource } from 'expo-audio';
 import * as Speech from 'expo-speech';
 import { Platform } from 'react-native';
-import type { WorkoutCue, WorkoutStep } from '../domain/workoutSession';
-import { AppSettings, defaultTtsVoiceId, TtsVoiceId } from '../domain/settings';
-import { HapticManager } from './HapticManager';
-import beepSource from '../assets/sounds/beep.wav';
-import { polishSpeechMessage } from './speechText';
 import { generatedTtsAssets } from '../assets/tts/googleTtsAssets';
+import beepSource from '../assets/sounds/beep.wav';
 import { COUNTDOWN_TRACK_MESSAGE, COUNTDOWN_TRACK_PLAYBACK_MS } from '../domain/countdown';
+import { AppSettings, defaultTtsVoiceId, TtsVoiceId } from '../domain/settings';
+import type { WorkoutCue, WorkoutStep } from '../domain/workoutSession';
 import {
   getCountdownCueSchedule,
   getTimedCueState,
   isCountdownCueMessage,
 } from './AudioCueTiming';
+import { HapticManager } from './HapticManager';
+import { polishSpeechMessage } from './speechText';
 
 interface QueuedSpeech {
   message: string;
@@ -21,6 +21,8 @@ interface QueuedSpeech {
 
 let playbackAudioModePromise: Promise<void> | null = null;
 const STEP_START_LATE_TOLERANCE_MS = 3000;
+const VOICE_PREVIEW_MESSAGE =
+  '음성 안내 테스트입니다. 운동 중에는 다음 동작과 남은 시간을 부드럽게 안내해 드립니다.';
 
 export class AudioCueManager {
   private spokenCueKeys = new Set<string>();
@@ -136,10 +138,7 @@ export class AudioCueManager {
   }
 
   async previewVoice(settings: AppSettings): Promise<void> {
-    await this.speak(
-      '음성 안내 테스트입니다. 운동 중에는 다음 동작과 남은 시간을 부드럽게 안내해 드립니다.',
-      settings,
-    );
+    await this.speak(VOICE_PREVIEW_MESSAGE, settings, { preempt: true });
   }
 
   async previewSound(settings: AppSettings): Promise<void> {

@@ -3,6 +3,9 @@ const path = require('path');
 const ts = require('typescript');
 
 const rootDir = path.resolve(__dirname, '..');
+const VOICE_PREVIEW_MESSAGE =
+  '음성 안내 테스트입니다. 운동 중에는 다음 동작과 남은 시간을 부드럽게 안내해 드립니다.';
+
 let tsHookInstalled = false;
 
 function installTypeScriptHook() {
@@ -41,7 +44,7 @@ function loadWorkoutTtsMessages() {
     }
   }
 
-  messages.push('음성 안내 테스트입니다. 운동 중에는 다음 동작과 남은 시간을 부드럽게 안내해 드립니다.');
+  messages.push(VOICE_PREVIEW_MESSAGE);
 
   return [...new Set(messages.map((message) => message.trim()).filter(Boolean))];
 }

@@ -1,12 +1,12 @@
 import { type Href, useRouter } from 'expo-router';
-import { useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { generatedTtsVoiceOptions } from '../assets/tts/googleTtsAssets';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { colors, radius, spacing } from '../constants/theme';
-import { generatedTtsVoiceOptions } from '../assets/tts/googleTtsAssets';
 import { deleteAllWorkoutRecords } from '../database/workoutRecordRepository';
-import { AppSettings } from '../domain/settings';
+import { AppSettings, TtsVoiceId } from '../domain/settings';
 import { AudioCueManager } from '../engine/AudioCueManager';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useStatisticsStore } from '../stores/statisticsStore';
@@ -28,9 +28,14 @@ export default function SettingsScreen() {
   const settings = useSettingsStore((store) => store.settings);
   const updateSetting = useSettingsStore((store) => store.updateSetting);
   const refreshStatistics = useStatisticsStore((store) => store.refresh);
-  const cueManager = useRef(new AudioCueManager()).current;
+  const [cueManager] = useState(() => new AudioCueManager());
   const [deleteVisible, setDeleteVisible] = useState(false);
   const [testStatus, setTestStatus] = useState<string | null>(null);
+  const [isVoicePreviewPlaying, setVoicePreviewPlaying] = useState(false);
+
+  useEffect(() => {
+    return () => cueManager.dispose();
+  }, [cueManager]);
 
   async function handleDeleteRecords() {
     await deleteAllWorkoutRecords();
@@ -38,34 +43,58 @@ export default function SettingsScreen() {
     setDeleteVisible(false);
   }
 
-  async function runCueTest(type: 'voice' | 'sound' | 'haptic' | 'all') {
-    const disabledMessages = {
-      voice: '음성 안내가 꺼져 있습니다.',
-      sound: '효과음이 꺼져 있습니다.',
-      haptic: '진동 안내가 꺼져 있습니다.',
-      all: '꺼진 항목은 테스트에서 건너뜁니다.',
-    };
+  async function stopVoicePreview() {
+    await cueManager.stopSpeech();
+    setVoicePreviewPlaying(false);
+  }
 
+  async function handleVoicePreviewPress() {
+    if (isVoicePreviewPlaying) {
+      await stopVoicePreview();
+      setTestStatus('음성 안내 테스트를 정지했습니다.');
+      return;
+    }
+
+    if (!settings.voiceEnabled) {
+      setTestStatus('음성 안내가 꺼져 있습니다.');
+      return;
+    }
+
+    setVoicePreviewPlaying(true);
+    setTestStatus('음성 안내 테스트를 재생 중입니다.');
     try {
-      if (type === 'voice' && !settings.voiceEnabled) {
-        setTestStatus(disabledMessages.voice);
-        return;
-      }
+      await cueManager.previewVoice(settings);
+      setTestStatus('음성 안내 테스트를 완료했습니다.');
+    } catch (error) {
+      if (__DEV__) console.warn('Voice cue test failed', error);
+      setTestStatus('음성 테스트 중 오류가 발생했습니다. 기기 볼륨과 권한을 확인해 주세요.');
+    } finally {
+      setVoicePreviewPlaying(false);
+    }
+  }
+
+  async function handleSelectVoice(voiceId: TtsVoiceId) {
+    if (isVoicePreviewPlaying) {
+      await stopVoicePreview();
+      setTestStatus('목소리를 변경해 재생 중이던 테스트 음성을 정지했습니다.');
+    }
+    await updateSetting('ttsVoiceId', voiceId);
+  }
+
+  async function runCueTest(type: 'sound' | 'haptic') {
+    try {
       if (type === 'sound' && !settings.soundEnabled) {
-        setTestStatus(disabledMessages.sound);
+        setTestStatus('효과음이 꺼져 있습니다.');
         return;
       }
       if (type === 'haptic' && !settings.hapticEnabled) {
-        setTestStatus(disabledMessages.haptic);
+        setTestStatus('진동 안내가 꺼져 있습니다.');
         return;
       }
 
-      if (type === 'voice') await cueManager.previewVoice(settings);
       if (type === 'sound') await cueManager.previewSound(settings);
       if (type === 'haptic') await cueManager.previewHaptic(settings);
-      if (type === 'all') await cueManager.previewAll(settings);
-
-      setTestStatus(type === 'all' ? disabledMessages.all : '테스트 안내를 실행했습니다.');
+      setTestStatus('테스트 안내를 실행했습니다.');
     } catch (error) {
       if (__DEV__) console.warn('Cue test failed', error);
       setTestStatus('테스트 실행 중 오류가 발생했습니다. 기기 볼륨과 권한을 확인해 주세요.');
@@ -98,7 +127,12 @@ export default function SettingsScreen() {
               </View>
               <Switch
                 value={settings[row.key]}
-                onValueChange={(value) => void updateSetting(row.key, value)}
+                onValueChange={(value) => {
+                  if (row.key === 'voiceEnabled' && !value && isVoicePreviewPlaying) {
+                    void stopVoicePreview();
+                  }
+                  void updateSetting(row.key, value);
+                }}
                 trackColor={{ true: colors.primary, false: '#CBD5E1' }}
                 thumbColor="#FFFFFF"
               />
@@ -119,7 +153,7 @@ export default function SettingsScreen() {
                   key={voice.id}
                   accessibilityRole="button"
                   accessibilityLabel={`${voice.label} 음성 선택`}
-                  onPress={() => void updateSetting('ttsVoiceId', voice.id)}
+                  onPress={() => void handleSelectVoice(voice.id)}
                   style={({ pressed }) => [
                     styles.voiceOption,
                     selected && styles.voiceOptionSelected,
@@ -149,11 +183,18 @@ export default function SettingsScreen() {
           <View style={styles.testButtons}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="음성 안내 테스트"
-              onPress={() => void runCueTest('voice')}
-              style={({ pressed }) => [styles.testButton, pressed && styles.pressedButton]}
+              accessibilityLabel={isVoicePreviewPlaying ? '음성 안내 테스트 정지' : '음성 안내 테스트 재생'}
+              onPress={() => void handleVoicePreviewPress()}
+              style={({ pressed }) => [
+                styles.testButton,
+                isVoicePreviewPlaying && styles.testButtonActive,
+                pressed && styles.pressedButton,
+              ]}
             >
-              <Text style={styles.testButtonText}>음성</Text>
+              <Text style={[styles.testButtonIcon, isVoicePreviewPlaying && styles.testButtonActiveText]}>
+                {isVoicePreviewPlaying ? '■' : '▶'}
+              </Text>
+              <Text style={[styles.testButtonText, isVoicePreviewPlaying && styles.testButtonActiveText]}>음성</Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
@@ -171,32 +212,26 @@ export default function SettingsScreen() {
             >
               <Text style={styles.testButtonText}>진동</Text>
             </Pressable>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="전체 안내 테스트"
-              onPress={() => void runCueTest('all')}
-              style={({ pressed }) => [styles.testButtonPrimary, pressed && styles.pressedButton]}
-            >
-              <Text style={styles.testButtonPrimaryText}>전체</Text>
-            </Pressable>
           </View>
           {testStatus ? <Text style={styles.testStatus}>{testStatus}</Text> : null}
         </View>
 
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="진단 화면으로 이동"
-          onPress={() => router.push('/diagnostics' as Href)}
-          style={({ pressed }) => [styles.diagnosticsButton, pressed && styles.pressedButton]}
-        >
-          <View style={styles.diagnosticsText}>
-            <Text style={styles.diagnosticsTitle}>진단 도구</Text>
-            <Text style={styles.diagnosticsDescription}>
-              배포 전에 세션, 저장소, 음성 환경을 확인합니다.
-            </Text>
-          </View>
-          <Text style={styles.diagnosticsAction}>열기</Text>
-        </Pressable>
+        {__DEV__ ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="진단 화면으로 이동"
+            onPress={() => router.push('/diagnostics' as Href)}
+            style={({ pressed }) => [styles.diagnosticsButton, pressed && styles.pressedButton]}
+          >
+            <View style={styles.diagnosticsText}>
+              <Text style={styles.diagnosticsTitle}>진단 도구</Text>
+              <Text style={styles.diagnosticsDescription}>
+                배포 전에 세션, 저장소, 음성 환경을 확인합니다.
+              </Text>
+            </View>
+            <Text style={styles.diagnosticsAction}>열기</Text>
+          </Pressable>
+        ) : null}
 
         <Pressable onPress={() => setDeleteVisible(true)} style={styles.deleteButton}>
           <Text style={styles.deleteText}>운동 기록 전체 삭제</Text>
@@ -376,20 +411,18 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     alignItems: 'center',
     justifyContent: 'center',
+    flexDirection: 'row',
+    gap: spacing.xs,
     paddingHorizontal: spacing.md,
   },
-  testButtonPrimary: {
-    minHeight: 44,
-    minWidth: 72,
-    borderRadius: radius.md,
+  testButtonActive: {
+    borderColor: colors.primary,
     backgroundColor: colors.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.md,
   },
+  testButtonIcon: { color: colors.primary, fontSize: 12, fontWeight: '900' },
+  testButtonActiveText: { color: '#FFFFFF' },
   pressedButton: { opacity: 0.72 },
   testButtonText: { color: colors.text, fontWeight: '900' },
-  testButtonPrimaryText: { color: '#FFFFFF', fontWeight: '900' },
   testStatus: { color: colors.primaryDark, fontWeight: '800', lineHeight: 20 },
   diagnosticsButton: {
     minHeight: 82,

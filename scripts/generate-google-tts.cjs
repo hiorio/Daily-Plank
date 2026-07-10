@@ -20,32 +20,42 @@ const DEFAULT_VOICES = [
   'ko-KR-Chirp3-HD-Callirrhoe',
   'ko-KR-Chirp3-HD-Charon',
   'ko-KR-Chirp3-HD-Puck',
+  'ko-KR-Chirp3-HD-Orus',
+  'ko-KR-Chirp3-HD-Rasalgethi',
 ];
 
 const VOICE_DETAILS = {
   "ko-KR-Chirp3-HD-Aoede": {
-    label: "HD Aoede",
-    description: "Smooth, stable HD female voice",
+    label: "Aoede",
+    description: "부드럽고 안정적인 여성 목소리",
   },
   "ko-KR-Chirp3-HD-Kore": {
-    label: "HD Kore",
-    description: "Bright, clear HD female voice",
+    label: "Kore",
+    description: "밝고 또렷한 여성 목소리",
   },
   "ko-KR-Chirp3-HD-Leda": {
-    label: "HD Leda",
-    description: "Calm, focused HD female voice",
+    label: "Leda",
+    description: "차분하고 집중감 있는 여성 목소리",
   },
   "ko-KR-Chirp3-HD-Callirrhoe": {
-    label: "HD Callirrhoe",
-    description: "Natural, gentle HD female voice",
+    label: "Callirrhoe",
+    description: "자연스럽고 부드러운 여성 목소리",
   },
   "ko-KR-Chirp3-HD-Charon": {
-    label: "HD Charon",
-    description: "Low, firm HD male voice",
+    label: "Charon",
+    description: "낮고 단단한 남성 목소리",
   },
   "ko-KR-Chirp3-HD-Puck": {
-    label: "HD Puck",
-    description: "Friendly, clear HD male voice",
+    label: "Puck",
+    description: "친근하고 선명한 남성 목소리",
+  },
+  "ko-KR-Chirp3-HD-Orus": {
+    label: "Orus",
+    description: "묵직하고 안정적인 남성 목소리",
+  },
+  "ko-KR-Chirp3-HD-Rasalgethi": {
+    label: "Rasalgethi",
+    description: "깊고 차분한 남성 목소리",
   },
 };
 
@@ -169,7 +179,9 @@ async function generateVoicePack({ accessToken, messages, voiceName }) {
       continue;
     }
 
-    const fileName = `${String(index + 1).padStart(2, '0')}-${hashMessage(message)}.mp3`;
+    const messageHash = hashMessage(message);
+    const fileName = findExistingGeneratedFile(outputDir, messageHash)
+      ?? `${String(index + 1).padStart(2, '0')}-${messageHash}.mp3`;
     const outputPath = path.join(outputDir, fileName);
 
     if (!fs.existsSync(outputPath)) {
@@ -186,6 +198,14 @@ async function generateVoicePack({ accessToken, messages, voiceName }) {
 
 function hashMessage(message) {
   return crypto.createHash('sha256').update(message).digest('hex').slice(0, 12);
+}
+
+function findExistingGeneratedFile(outputDir, messageHash) {
+  if (!fs.existsSync(outputDir)) return null;
+  return fs
+    .readdirSync(outputDir)
+    .filter((fileName) => fileName.endsWith(`-${messageHash}.mp3`))
+    .sort()[0] ?? null;
 }
 
 async function synthesizeSpeech({ accessToken, text, voiceName }) {
@@ -234,7 +254,7 @@ function writeCombinedManifest(voicePacks) {
     "import type { AudioSource } from 'expo-audio';",
     "import type { TtsVoiceId } from '../../domain/settings';",
     '',
-    '// ???뚯씪? scripts/generate-google-tts.cjs濡??앹꽦?⑸땲??',
+    '// 이 파일은 scripts/generate-google-tts.cjs로 생성합니다.',
     'export interface GeneratedTtsVoiceOption {',
     '  id: TtsVoiceId;',
     '  label: string;',
@@ -247,7 +267,7 @@ function writeCombinedManifest(voicePacks) {
   for (const voicePack of voicePacks) {
     const detail = VOICE_DETAILS[voicePack.voiceName] ?? {
       label: voicePack.voiceName,
-      description: 'Google Cloud TTS ?뚯꽦',
+      description: 'Google Cloud TTS 음성',
     };
     lines.push(
       `  { id: ${JSON.stringify(voicePack.voiceName)} as TtsVoiceId, label: ${JSON.stringify(

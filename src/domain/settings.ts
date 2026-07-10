@@ -5,6 +5,8 @@ export const ttsVoiceIds = [
   'ko-KR-Chirp3-HD-Callirrhoe',
   'ko-KR-Chirp3-HD-Charon',
   'ko-KR-Chirp3-HD-Puck',
+  'ko-KR-Chirp3-HD-Orus',
+  'ko-KR-Chirp3-HD-Rasalgethi',
 ] as const;
 
 export type TtsVoiceId = (typeof ttsVoiceIds)[number];
