@@ -4,7 +4,8 @@ import { WorkoutCue, WorkoutSession, WorkoutStep } from '../domain/workoutSessio
 import { exerciseById, exercises } from '../data/exercises';
 import { polishSpeechMessage } from '../engine/speechText';
 
-const SAFE_REST_DURATIONS_SECONDS = [15, 20] as const;
+const SAFE_REST_DURATIONS_SECONDS = [3, 5, 15, 20] as const;
+const SHORT_REST_START_MESSAGE = '잠시 쉬어 주세요.';
 const ENCOURAGEMENT_MESSAGE = '이제 거의 다 왔어요. 조금만 힘내세요.';
 const TEN_SECOND_MESSAGE = '10초 남았습니다.';
 
@@ -28,6 +29,7 @@ export function getNextExerciseMessage(exerciseName: string): string {
 }
 
 export function getRestStartMessage(durationSeconds: number): string {
+  if (durationSeconds <= COUNTDOWN_TRACK_START_SECONDS) return SHORT_REST_START_MESSAGE;
   return `${durationSeconds}초 쉬어 주세요.`;
 }
 
@@ -207,6 +209,7 @@ export function getCustomSessionTtsMessages(): string[] {
   const messages = new Set<string>([
     '운동을 준비해 주세요.',
     '운동을 마무리해 주세요.',
+    SHORT_REST_START_MESSAGE,
     TEN_SECOND_MESSAGE,
     ENCOURAGEMENT_MESSAGE,
     COUNTDOWN_TRACK_MESSAGE,

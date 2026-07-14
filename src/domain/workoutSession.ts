@@ -28,3 +28,10 @@ export interface WorkoutSession {
   estimatedCalories?: number;
   steps: WorkoutStep[];
 }
+
+export function getExerciseDurationSeconds(session: WorkoutSession): number {
+  return session.steps.reduce(
+    (total, step) => total + (step.type === 'EXERCISE' ? step.durationSeconds : 0),
+    0,
+  );
+}

@@ -4,7 +4,7 @@ import {
   CustomWorkoutSessionState,
   emptyCustomWorkoutSessionState,
 } from '../domain/customWorkoutSession';
-import { WorkoutSession } from '../domain/workoutSession';
+import { WorkoutSession, WorkoutStep } from '../domain/workoutSession';
 import { getWorkoutSession, getWorkoutSessions } from '../data/sessionRepository';
 import {
   loadCustomWorkoutSessionState,
@@ -53,6 +53,28 @@ function getNextCustomName(baseSession: WorkoutSession, savedSessions: CustomWor
   return `${baseSession.title} 커스텀 ${count}`;
 }
 
+function mergeCustomStepsWithBase(
+  baseSession: WorkoutSession,
+  customSession: WorkoutSession,
+): WorkoutStep[] {
+  const customStepsById = new Map(customSession.steps.map((step) => [step.id, step]));
+
+  return baseSession.steps.map((baseStep) => {
+    const customStep = customStepsById.get(baseStep.id);
+    if (!customStep || customStep.type !== baseStep.type) return baseStep;
+
+    if (baseStep.type === 'EXERCISE' && customStep.exerciseId) {
+      return { ...baseStep, exerciseId: customStep.exerciseId };
+    }
+
+    if (baseStep.type === 'REST') {
+      return { ...baseStep, durationSeconds: customStep.durationSeconds };
+    }
+
+    return baseStep;
+  });
+}
+
 function runtimeSessionFromBase(baseSession: WorkoutSession, session: WorkoutSession): WorkoutSession {
   const runtimeSession: WorkoutSession = {
     ...session,
@@ -60,6 +82,7 @@ function runtimeSessionFromBase(baseSession: WorkoutSession, session: WorkoutSes
     title: baseSession.title,
     description: baseSession.description,
     level: baseSession.level,
+    steps: mergeCustomStepsWithBase(baseSession, session),
   };
   if (baseSession.estimatedCalories != null) {
     runtimeSession.estimatedCalories = baseSession.estimatedCalories;

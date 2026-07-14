@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, radius, spacing } from '../constants/theme';
-import { WorkoutSession } from '../domain/workoutSession';
+import { getExerciseDurationSeconds, WorkoutSession } from '../domain/workoutSession';
 import { formatDurationKorean } from '../utils/duration';
 
 const levelLabel = {
@@ -17,8 +17,9 @@ interface SessionCardProps {
 
 export function SessionCard({ session, onPrepare, onStart }: SessionCardProps) {
   const exerciseCount = session.steps.filter((step) => step.type === 'EXERCISE').length;
+  const exerciseDurationSeconds = getExerciseDurationSeconds(session);
   const level = levelLabel[session.level];
-  const minutes = Math.round(session.totalDurationSeconds / 60);
+  const minutes = Math.round(exerciseDurationSeconds / 60);
 
   return (
     <View style={styles.card}>
@@ -30,6 +31,7 @@ export function SessionCard({ session, onPrepare, onStart }: SessionCardProps) {
         <View style={styles.titleGroup}>
           <Text style={styles.title}>{session.title}</Text>
           <Text style={styles.meta}>
+            운동 {formatDurationKorean(exerciseDurationSeconds)} · 전체{' '}
             {formatDurationKorean(session.totalDurationSeconds)} · {exerciseCount}개 동작
           </Text>
         </View>

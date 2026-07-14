@@ -7,7 +7,10 @@ import {
   getCustomSessionTtsMessages,
   getExerciseStartMessage,
   getNextExerciseMessage,
+  getRestStartMessage,
+  getSafeRestDurations,
   replaceExerciseInSession,
+  replaceStepDurationInSession,
 } from './sessionGuidanceService';
 
 describe('sessionGuidanceService', () => {
@@ -46,12 +49,31 @@ describe('sessionGuidanceService', () => {
     expect(session.totalDurationSeconds).toBe(total);
   });
 
+  it('offers shorter selectable rest durations', () => {
+    expect(getSafeRestDurations()).toEqual([3, 5, 15, 20]);
+  });
+
+  it.each([3, 5])('does not schedule countdown voice for a %s-second rest', (durationSeconds) => {
+    const session = replaceStepDurationInSession(plank5Session, 'rest_1', durationSeconds);
+    const rest = session.steps.find((step) => step.id === 'rest_1');
+    const total = session.steps.reduce((sum, step) => sum + step.durationSeconds, 0);
+
+    expect(rest?.durationSeconds).toBe(durationSeconds);
+    expect(rest?.startMessage).toBe(getRestStartMessage(durationSeconds));
+    expect(rest?.cues?.some((cue) => cue.message === COUNTDOWN_TRACK_MESSAGE)).toBe(false);
+    expect(session.totalDurationSeconds).toBe(total);
+  });
+
   it('includes all selectable exercise templates in the generated TTS catalog', () => {
     const messages = new Set(getCustomSessionTtsMessages());
 
     for (const exercise of exercises) {
       expect(messages.has(getExerciseStartMessage(exercise.name))).toBe(true);
       expect(messages.has(getNextExerciseMessage(exercise.name))).toBe(true);
+    }
+
+    for (const duration of getSafeRestDurations()) {
+      expect(messages.has(getRestStartMessage(duration))).toBe(true);
     }
   });
 });

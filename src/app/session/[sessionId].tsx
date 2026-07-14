@@ -6,7 +6,7 @@ import { ConfirmModal } from '../../components/ConfirmModal';
 import { colors, radius, spacing } from '../../constants/theme';
 import { exerciseById, exercises } from '../../data/exercises';
 import { getWorkoutSession } from '../../data/sessionRepository';
-import { WorkoutStepType } from '../../domain/workoutSession';
+import { getExerciseDurationSeconds, WorkoutStepType } from '../../domain/workoutSession';
 import { getSafeRestDurations } from '../../services/sessionGuidanceService';
 import { canEditCustomSessions } from '../../services/subscriptionGate';
 import { useCustomSessionStore } from '../../stores/customSessionStore';
@@ -60,6 +60,7 @@ export default function SessionDetailScreen() {
   }
 
   const exerciseSteps = session.steps.filter((step) => step.type === 'EXERCISE');
+  const exerciseDurationSeconds = getExerciseDurationSeconds(session);
   const selectedExerciseStep = session.steps.find((step) => step.id === exercisePickerStepId);
   const selectedDurationStep = session.steps.find((step) => step.id === durationPickerStepId);
 
@@ -106,8 +107,8 @@ export default function SessionDetailScreen() {
 
         <View style={styles.summaryGrid}>
           <View style={styles.summaryCard}>
-            <Text style={styles.summaryValue}>{formatDurationKorean(session.totalDurationSeconds)}</Text>
-            <Text style={styles.summaryLabel}>운동 시간</Text>
+            <Text style={styles.summaryValue}>{formatDurationKorean(exerciseDurationSeconds)}</Text>
+            <Text style={styles.summaryLabel}>순수 운동 시간</Text>
           </View>
           <View style={styles.summaryCard}>
             <Text style={styles.summaryValue}>{levelLabel[session.level]}</Text>
@@ -561,9 +562,10 @@ const styles = StyleSheet.create({
   exerciseOptionDescription: { color: colors.muted, lineHeight: 19, fontSize: 12, fontWeight: '700' },
   exerciseDifficulty: { color: colors.muted, fontSize: 12, fontWeight: '900' },
   exerciseDifficultySelected: { color: colors.primary },
-  durationOptions: { flexDirection: 'row', gap: spacing.md },
+  durationOptions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   durationOption: {
-    flex: 1,
+    flexBasis: '45%',
+    flexGrow: 1,
     minHeight: 52,
     borderRadius: radius.md,
     backgroundColor: colors.surface,

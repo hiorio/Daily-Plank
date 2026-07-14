@@ -3,9 +3,46 @@ import {
   COUNTDOWN_TRACK_MESSAGE,
   COUNTDOWN_TRACK_START_SECONDS,
 } from '../domain/countdown';
+import { getExerciseDurationSeconds } from '../domain/workoutSession';
 import { workoutSessions } from './sessionRepository';
 
 describe('workoutSessions default voice cues', () => {
+  it('uses exercise-only time for the named five, seven, and ten minute routines', () => {
+    expect(
+      workoutSessions.map((session) => ({
+        id: session.id,
+        exerciseDurationSeconds: getExerciseDurationSeconds(session),
+        exerciseCount: session.steps.filter((step) => step.type === 'EXERCISE').length,
+        totalDurationSeconds: session.totalDurationSeconds,
+      })),
+    ).toEqual([
+      {
+        id: 'plank_beginner_5',
+        exerciseDurationSeconds: 300,
+        exerciseCount: 8,
+        totalDurationSeconds: 430,
+      },
+      {
+        id: 'plank_intermediate_7',
+        exerciseDurationSeconds: 420,
+        exerciseCount: 11,
+        totalDurationSeconds: 605,
+      },
+      {
+        id: 'plank_advanced_10',
+        exerciseDurationSeconds: 600,
+        exerciseCount: 14,
+        totalDurationSeconds: 865,
+      },
+    ]);
+
+    for (const session of workoutSessions) {
+      expect(session.totalDurationSeconds).toBe(
+        session.steps.reduce((total, step) => total + step.durationSeconds, 0),
+      );
+    }
+  });
+
   it('adds start messages and one five-second countdown track cue to audible steps', () => {
     for (const session of workoutSessions) {
       for (const step of session.steps) {

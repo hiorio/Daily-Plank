@@ -6,7 +6,7 @@ export const plank5Session: WorkoutSession = {
   title: '5분 초급 플랭크',
   description: '처음 시작하는 사용자를 위한 기본 플랭크 루틴',
   level: 'BEGINNER',
-  totalDurationSeconds: 300,
+  totalDurationSeconds: 430,
   estimatedCalories: 28,
   steps: [
     {
@@ -75,16 +75,34 @@ export const plank5Session: WorkoutSession = {
       startMessage: '숄더 탭 플랭크를 시작한다.',
       cues: [{ remainingSeconds: 10, message: '10초 남았다.', cueType: 'VOICE' }],
     },
-    { id: 'rest_5', type: 'REST', title: '휴식', durationSeconds: 15, startMessage: '마지막 동작을 준비한다.' },
+    { id: 'rest_5', type: 'REST', title: '휴식', durationSeconds: 15, startMessage: '15초 휴식한다.' },
     {
       id: 'exercise_6',
       type: 'EXERCISE',
       title: '기본 포어암 플랭크',
       exerciseId: 'forearm_plank',
       durationSeconds: 40,
+      startMessage: '기본 포어암 플랭크를 시작한다.',
+    },
+    { id: 'rest_6', type: 'REST', title: '휴식', durationSeconds: 15, startMessage: '15초 휴식한다.' },
+    {
+      id: 'exercise_7',
+      type: 'EXERCISE',
+      title: '하이 플랭크',
+      exerciseId: 'high_plank',
+      durationSeconds: 50,
+      startMessage: '하이 플랭크를 시작한다.',
+    },
+    { id: 'rest_7', type: 'REST', title: '휴식', durationSeconds: 15, startMessage: '15초 휴식한다.' },
+    {
+      id: 'exercise_8',
+      type: 'EXERCISE',
+      title: '기본 포어암 플랭크',
+      exerciseId: 'forearm_plank',
+      durationSeconds: 50,
       startMessage: '마지막 플랭크를 시작한다.',
       cues: [
-        { elapsedSeconds: 22, message: '이제 거의 다 왔어요. 조금만 힘내세요.', cueType: 'VOICE' },
+        { elapsedSeconds: 32, message: '이제 거의 다 왔어요. 조금만 힘내세요.', cueType: 'VOICE' },
         { remainingSeconds: 10, message: '마지막 10초이다.', cueType: 'VOICE' },
         {
           remainingSeconds: COUNTDOWN_TRACK_START_SECONDS,
