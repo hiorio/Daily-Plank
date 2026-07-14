@@ -33,7 +33,7 @@
     ],
     "ios": {
       "bundleIdentifier": "com.hiorio.dailyplank",
-      "buildNumber": "11",
+      "buildNumber": "12",
       "supportsTablet": false,
       "infoPlist": {
         "CFBundleDisplayName": "매일 플랭크",
