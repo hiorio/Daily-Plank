@@ -2,12 +2,10 @@ import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { SessionCard } from '../components/SessionCard';
-import { StatCard } from '../components/StatCard';
 import { appCopy } from '../constants/copy';
 import { colors, radius, spacing } from '../constants/theme';
 import { useWorkoutStatistics } from '../hooks/useWorkoutStatistics';
 import { useCustomSessionStore } from '../stores/customSessionStore';
-import { formatDurationKorean } from '../utils/duration';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -41,29 +39,6 @@ export default function HomeScreen() {
               <Text style={styles.iconButtonText}>설정</Text>
             </Pressable>
           </View>
-        </View>
-
-        <View style={styles.streakCard}>
-          <View style={styles.streakIcon}>
-            <Text style={styles.streakIconText}>S</Text>
-          </View>
-          <View style={styles.streakText}>
-            <Text style={styles.streakLabel}>연속 운동</Text>
-            <Text style={styles.streakValue}>{statistics.streakDays}일 연속</Text>
-          </View>
-          <View style={styles.streakDots}>
-            {Array.from({ length: 7 }).map((_, index) => (
-              <View
-                key={index}
-                style={[styles.streakDot, index < Math.min(statistics.streakDays, 7) && styles.streakDotActive]}
-              />
-            ))}
-          </View>
-        </View>
-
-        <View style={styles.statsRow}>
-          <StatCard label="이번 주 횟수" value={`${statistics.weeklyWorkoutCount}회`} />
-          <StatCard label="이번 주 운동 시간" value={formatDurationKorean(statistics.weeklyDurationSeconds)} />
         </View>
 
         <View style={styles.sectionHeader}>
@@ -148,63 +123,6 @@ const styles = StyleSheet.create({
     color: colors.text,
     fontSize: 13,
     fontWeight: '900',
-  },
-  streakCard: {
-    borderRadius: radius.xl,
-    backgroundColor: colors.primary,
-    padding: spacing.lg,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    shadowColor: colors.shadow,
-    shadowOpacity: 1,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 12 },
-    elevation: 4,
-  },
-  streakIcon: {
-    width: 46,
-    height: 46,
-    borderRadius: 15,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  streakIconText: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '900',
-  },
-  streakText: {
-    flex: 1,
-  },
-  streakLabel: {
-    color: 'rgba(255,255,255,0.72)',
-    fontSize: 12,
-    fontWeight: '900',
-  },
-  streakValue: {
-    color: '#FFFFFF',
-    fontSize: 20,
-    fontWeight: '900',
-    marginTop: spacing.xs,
-  },
-  streakDots: {
-    flexDirection: 'row',
-    gap: 5,
-  },
-  streakDot: {
-    width: 14,
-    height: 22,
-    borderRadius: 6,
-    backgroundColor: 'rgba(255,255,255,0.25)',
-  },
-  streakDotActive: {
-    backgroundColor: '#FFFFFF',
-  },
-  statsRow: {
-    flexDirection: 'row',
-    gap: spacing.md,
   },
   sectionHeader: {
     marginTop: spacing.sm,

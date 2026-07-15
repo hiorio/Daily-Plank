@@ -6,6 +6,7 @@ import { StatCard } from '../components/StatCard';
 import { colors, radius, spacing } from '../constants/theme';
 import { getWorkoutRecordsBetween } from '../database/workoutRecordRepository';
 import { WorkoutRecord } from '../domain/workoutRecord';
+import { useWorkoutStatistics } from '../hooks/useWorkoutStatistics';
 import {
   buildMonthlyWorkoutSummary,
   buildWeeklyWorkoutSummary,
@@ -24,6 +25,7 @@ export default function HistoryScreen() {
   const [records, setRecords] = useState<WorkoutRecord[]>([]);
   const [viewMode, setViewMode] = useState<HistoryViewMode>('week');
   const [monthCursor, setMonthCursor] = useState(() => startOfLocalMonth(new Date()));
+  const { statistics } = useWorkoutStatistics();
 
   useFocusEffect(
     useCallback(() => {
@@ -65,6 +67,26 @@ export default function HistoryScreen() {
               <View>
                 <Text style={styles.eyebrow}>HISTORY</Text>
                 <Text style={styles.title}>운동 기록</Text>
+              </View>
+            </View>
+            <View style={styles.streakCard}>
+              <View style={styles.streakIcon}>
+                <Text style={styles.streakIconText}>S</Text>
+              </View>
+              <View style={styles.streakText}>
+                <Text style={styles.streakLabel}>연속 운동</Text>
+                <Text style={styles.streakValue}>{statistics.streakDays}일 연속</Text>
+              </View>
+              <View style={styles.streakDots}>
+                {Array.from({ length: 7 }).map((_, index) => (
+                  <View
+                    key={index}
+                    style={[
+                      styles.streakDot,
+                      index < Math.min(statistics.streakDays, 7) && styles.streakDotActive,
+                    ]}
+                  />
+                ))}
               </View>
             </View>
             <View style={styles.segmented}>
@@ -263,6 +285,39 @@ const styles = StyleSheet.create({
   backText: { color: colors.text, fontSize: 28, fontWeight: '900', lineHeight: 30 },
   eyebrow: { color: colors.muted, fontSize: 12, fontWeight: '900' },
   title: { color: colors.text, fontSize: 25, fontWeight: '900' },
+  streakCard: {
+    borderRadius: radius.xl,
+    backgroundColor: colors.primary,
+    padding: spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    shadowColor: colors.shadow,
+    shadowOpacity: 1,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 4,
+  },
+  streakIcon: {
+    width: 46,
+    height: 46,
+    borderRadius: 15,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  streakIconText: { color: '#FFFFFF', fontSize: 18, fontWeight: '900' },
+  streakText: { flex: 1 },
+  streakLabel: { color: 'rgba(255,255,255,0.72)', fontSize: 12, fontWeight: '900' },
+  streakValue: { color: '#FFFFFF', fontSize: 20, fontWeight: '900', marginTop: spacing.xs },
+  streakDots: { flexDirection: 'row', gap: 5 },
+  streakDot: {
+    width: 14,
+    height: 22,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255,255,255,0.25)',
+  },
+  streakDotActive: { backgroundColor: '#FFFFFF' },
   segmented: {
     flexDirection: 'row',
     backgroundColor: colors.mutedSurface,
