@@ -2,11 +2,13 @@ import { Stack, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Alert } from 'react-native';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { Mascot } from '../components/Mascot';
 import { appCopy } from '../constants/copy';
 import { initializeDatabase } from '../database/database';
 import { useAppLifecycle } from '../hooks/useAppLifecycle';
 import { buildWorkoutRecord, saveWorkoutRecord } from '../services/workoutRecordService';
 import { useCustomSessionStore } from '../stores/customSessionStore';
+import { useMascotStore } from '../stores/mascotStore';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useWorkoutStore } from '../stores/workoutStore';
 
@@ -20,6 +22,7 @@ export default function RootLayout() {
   const recoverableSession = useWorkoutStore((store) => store.recoverableSession);
   const restoreRecoverableWorkout = useWorkoutStore((store) => store.restoreRecoverableWorkout);
   const discardRecoverableWorkout = useWorkoutStore((store) => store.discardRecoverableWorkout);
+  const greetOnLaunch = useMascotStore((store) => store.greetOnLaunch);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
@@ -29,6 +32,7 @@ export default function RootLayout() {
         await hydrateSettings();
         await hydrateCustomSessions();
         await checkRecoverableWorkout();
+        void greetOnLaunch();
       } catch (error) {
         Alert.alert('초기화 오류', '앱 데이터를 준비하지 못했다. 다시 실행해 주세요.');
         if (__DEV__) console.error(error);
@@ -37,7 +41,7 @@ export default function RootLayout() {
       }
     }
     void boot();
-  }, [checkRecoverableWorkout, hydrateCustomSessions, hydrateSettings]);
+  }, [checkRecoverableWorkout, greetOnLaunch, hydrateCustomSessions, hydrateSettings]);
 
   async function handleRestore() {
     const sessionId = recoverableSession?.id ?? recoverableState?.sessionId;
@@ -68,6 +72,7 @@ export default function RootLayout() {
           headerShadowVisible: false,
         }}
       />
+      <Mascot />
       <ConfirmModal
         visible={!!recoverableState}
         title={appCopy.continueWorkoutTitle}
