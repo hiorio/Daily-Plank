@@ -9,7 +9,14 @@ import Animated, {
 } from 'react-native-reanimated';
 import { colors, radius, spacing } from '../constants/theme';
 import { useMascotStore } from '../stores/mascotStore';
-import { CHICK_HEIGHT, CHICK_WIDTH, ChickPose, ChickSprite } from './ChickSprite';
+import {
+  CHICK_HEIGHT,
+  CHICK_PLANK_HEIGHT,
+  CHICK_PLANK_WIDTH,
+  CHICK_WIDTH,
+  ChickPose,
+  ChickSprite,
+} from './ChickSprite';
 
 const BUBBLE_MAX_WIDTH = 220;
 // 이동 반경 여백: 상단 헤더, 하단 버튼 영역, 좌우 가장자리를 피한다.
@@ -17,11 +24,13 @@ const EDGE_MARGIN_X = 12;
 const TOP_MARGIN = 130;
 const BOTTOM_MARGIN = 170;
 
-type MascotMode = 'roam' | 'celebrate' | 'hidden';
+type MascotMode = 'roam' | 'celebrate' | 'plank' | 'proud' | 'hidden';
 
 function modeForPathname(pathname: string): MascotMode {
-  if (pathname.startsWith('/workout') || pathname.startsWith('/session')) return 'hidden';
+  if (pathname.startsWith('/workout')) return 'plank';
+  if (pathname.startsWith('/session')) return 'hidden';
   if (pathname.startsWith('/complete')) return 'celebrate';
+  if (pathname.startsWith('/history')) return 'proud';
   return 'roam';
 }
 
@@ -79,17 +88,32 @@ export function Mascot() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [height, message, mode, width]);
 
-  // 축하 모드: 화면 가운데로 이동해 계속 점프하고 축하 대사를 한 번 말한다.
+  // 고정 위치 모드(축하/플랭크/뿌듯): 정해진 자리로 이동해 자세를 유지한다.
   // 공유값 대입은 reanimated의 정식 API라 immutability 규칙 예외를 둔다.
   useEffect(() => {
-    if (mode !== 'celebrate') return;
+    if (mode === 'roam' || mode === 'hidden') return;
+
+    let targetX = width / 2 - CHICK_WIDTH / 2;
+    let targetY = Math.max(TOP_MARGIN, height * 0.3);
+
+    if (mode === 'plank') {
+      // 운동 화면: 우측 하단 구석에서 함께 플랭크. 중앙 콘텐츠를 가리지 않는다.
+      targetX = width - CHICK_PLANK_WIDTH - EDGE_MARGIN_X;
+      targetY = Math.max(TOP_MARGIN, height - CHICK_PLANK_HEIGHT - 24);
+    } else if (mode === 'proud') {
+      // 기록 화면: 우측 하단 구석에서 뿌듯하게 응원.
+      targetX = width - CHICK_WIDTH - EDGE_MARGIN_X;
+      targetY = Math.max(TOP_MARGIN, height - CHICK_HEIGHT - 36);
+    }
+
     // eslint-disable-next-line react-hooks/immutability
-    x.value = withTiming(width / 2 - CHICK_WIDTH / 2, { duration: 500 });
+    x.value = withTiming(targetX, { duration: 500, easing: Easing.out(Easing.quad) });
     // eslint-disable-next-line react-hooks/immutability
-    y.value = withTiming(Math.max(TOP_MARGIN, height * 0.3), { duration: 500 });
+    y.value = withTiming(targetY, { duration: 500, easing: Easing.out(Easing.quad) });
     // eslint-disable-next-line react-hooks/immutability
     facing.value = 1;
-    if (celebratedPathRef.current !== pathname) {
+
+    if (mode === 'celebrate' && celebratedPathRef.current !== pathname) {
       celebratedPathRef.current = pathname;
       say('와, 오늘 운동 완료! 정말 대단해요!');
     }
@@ -106,12 +130,24 @@ export function Mascot() {
   if (mode === 'hidden') return null;
 
   const pose: ChickPose =
-    mode === 'celebrate' ? 'jump' : message ? 'greet' : isMoving ? 'run' : 'idle';
+    mode === 'celebrate'
+      ? 'jump'
+      : mode === 'plank'
+        ? 'plank'
+        : mode === 'proud'
+          ? 'proud'
+          : message
+            ? 'greet'
+            : isMoving
+              ? 'run'
+              : 'idle';
+
+  const showBubble = !!message && (mode === 'roam' || mode === 'celebrate');
 
   return (
     <View style={[StyleSheet.absoluteFill, styles.overlay]}>
       <Animated.View style={[styles.body, bodyStyle]}>
-        {message ? (
+        {showBubble ? (
           <View style={styles.bubbleWrap}>
             <View style={styles.bubble}>
               <Text style={styles.bubbleText}>{message}</Text>
