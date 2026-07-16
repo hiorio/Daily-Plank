@@ -16,6 +16,7 @@ type ToggleSettingKey = Exclude<keyof AppSettings, 'ttsVoiceId' | 'mascotType'>;
 const mascotOptions: { id: MascotType; label: string; emoji: string; description: string }[] = [
   { id: 'chick', label: '병아리', emoji: '🐥', description: '노란 병아리 친구' },
   { id: 'cat', label: '고양이', emoji: '🐱', description: '회색 고양이 친구' },
+  { id: 'none', label: '보이지 않기', emoji: '🚫', description: '마스코트 숨기기' },
 ];
 
 const rows: { key: ToggleSettingKey; label: string; description: string; marker: string }[] = [

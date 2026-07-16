@@ -130,7 +130,7 @@ export function Mascot() {
     transform: [{ scaleX: facing.value }],
   }));
 
-  if (mode === 'hidden') return null;
+  if (mode === 'hidden' || mascotType === 'none') return null;
 
   const pose: ChickPose =
     mode === 'celebrate'

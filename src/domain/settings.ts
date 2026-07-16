@@ -17,7 +17,7 @@ export function isTtsVoiceId(value: unknown): value is TtsVoiceId {
   return typeof value === 'string' && ttsVoiceIds.includes(value as TtsVoiceId);
 }
 
-export const mascotTypes = ['chick', 'cat'] as const;
+export const mascotTypes = ['chick', 'cat', 'none'] as const;
 
 export type MascotType = (typeof mascotTypes)[number];
 
