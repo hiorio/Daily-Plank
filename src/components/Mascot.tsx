@@ -9,6 +9,8 @@ import Animated, {
 } from 'react-native-reanimated';
 import { colors, radius, spacing } from '../constants/theme';
 import { useMascotStore } from '../stores/mascotStore';
+import { useSettingsStore } from '../stores/settingsStore';
+import { CatSprite } from './CatSprite';
 import {
   CHICK_HEIGHT,
   CHICK_PLANK_HEIGHT,
@@ -39,6 +41,7 @@ export function Mascot() {
   const mode = modeForPathname(pathname ?? '/');
   const message = useMascotStore((store) => store.message);
   const say = useMascotStore((store) => store.say);
+  const mascotType = useSettingsStore((store) => store.settings.mascotType);
   const { width, height } = useWindowDimensions();
   const [isMoving, setIsMoving] = useState(false);
 
@@ -156,7 +159,7 @@ export function Mascot() {
           </View>
         ) : null}
         <Animated.View style={faceStyle}>
-          <ChickSprite pose={pose} />
+          {mascotType === 'cat' ? <CatSprite pose={pose} /> : <ChickSprite pose={pose} />}
         </Animated.View>
       </Animated.View>
     </View>

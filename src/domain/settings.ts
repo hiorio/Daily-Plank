@@ -17,6 +17,16 @@ export function isTtsVoiceId(value: unknown): value is TtsVoiceId {
   return typeof value === 'string' && ttsVoiceIds.includes(value as TtsVoiceId);
 }
 
+export const mascotTypes = ['chick', 'cat'] as const;
+
+export type MascotType = (typeof mascotTypes)[number];
+
+export const defaultMascotType: MascotType = 'chick';
+
+export function isMascotType(value: unknown): value is MascotType {
+  return typeof value === 'string' && mascotTypes.includes(value as MascotType);
+}
+
 export interface AppSettings {
   voiceEnabled: boolean;
   ttsVoiceId: TtsVoiceId;
@@ -26,6 +36,7 @@ export interface AppSettings {
   countdownCueEnabled: boolean;
   keepAwakeEnabled: boolean;
   detailedGuideEnabled: boolean;
+  mascotType: MascotType;
 }
 
 export const defaultSettings: AppSettings = {
@@ -37,4 +48,5 @@ export const defaultSettings: AppSettings = {
   countdownCueEnabled: true,
   keepAwakeEnabled: true,
   detailedGuideEnabled: true,
+  mascotType: defaultMascotType,
 };

@@ -6,12 +6,17 @@ import { generatedTtsVoiceOptions } from '../assets/tts/googleTtsAssets';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { colors, radius, spacing } from '../constants/theme';
 import { deleteAllWorkoutRecords } from '../database/workoutRecordRepository';
-import { AppSettings, TtsVoiceId } from '../domain/settings';
+import { AppSettings, MascotType, TtsVoiceId } from '../domain/settings';
 import { AudioCueManager } from '../engine/AudioCueManager';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useStatisticsStore } from '../stores/statisticsStore';
 
-type ToggleSettingKey = Exclude<keyof AppSettings, 'ttsVoiceId'>;
+type ToggleSettingKey = Exclude<keyof AppSettings, 'ttsVoiceId' | 'mascotType'>;
+
+const mascotOptions: { id: MascotType; label: string; emoji: string; description: string }[] = [
+  { id: 'chick', label: '병아리', emoji: '🐥', description: '노란 병아리 친구' },
+  { id: 'cat', label: '고양이', emoji: '🐱', description: '회색 고양이 친구' },
+];
 
 const rows: { key: ToggleSettingKey; label: string; description: string; marker: string }[] = [
   { key: 'voiceEnabled', label: '음성 안내', description: '동작 시작과 주요 알림을 TTS로 안내합니다.', marker: 'V' },
@@ -164,6 +169,38 @@ export default function SettingsScreen() {
                     <Text style={[styles.voiceLabel, selected && styles.voiceLabelSelected]}>{voice.label}</Text>
                     <Text style={styles.voiceMeta}>{voice.description}</Text>
                   </View>
+                  <Text style={[styles.voiceState, selected && styles.voiceStateSelected]}>
+                    {selected ? '선택됨' : '선택'}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+
+        <View style={styles.voicePanel}>
+          <View style={styles.voiceHeader}>
+            <Text style={styles.panelTitleInline}>마스코트 캐릭터</Text>
+            <Text style={styles.voiceDescription}>앱을 돌아다니며 응원하는 캐릭터를 고릅니다.</Text>
+          </View>
+          <View style={styles.mascotOptions}>
+            {mascotOptions.map((mascot) => {
+              const selected = settings.mascotType === mascot.id;
+              return (
+                <Pressable
+                  key={mascot.id}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${mascot.label} 마스코트 선택`}
+                  onPress={() => void updateSetting('mascotType', mascot.id)}
+                  style={({ pressed }) => [
+                    styles.mascotOption,
+                    selected && styles.voiceOptionSelected,
+                    pressed && styles.pressedButton,
+                  ]}
+                >
+                  <Text style={styles.mascotEmoji}>{mascot.emoji}</Text>
+                  <Text style={[styles.voiceLabel, selected && styles.voiceLabelSelected]}>{mascot.label}</Text>
+                  <Text style={styles.voiceMeta}>{mascot.description}</Text>
                   <Text style={[styles.voiceState, selected && styles.voiceStateSelected]}>
                     {selected ? '선택됨' : '선택'}
                   </Text>
@@ -346,6 +383,25 @@ const styles = StyleSheet.create({
   },
   voiceOptions: {
     gap: spacing.sm,
+  },
+  mascotOptions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  mascotOption: {
+    flex: 1,
+    minHeight: 96,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceAlt,
+    padding: spacing.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+  },
+  mascotEmoji: {
+    fontSize: 30,
   },
   voiceOption: {
     minHeight: 68,

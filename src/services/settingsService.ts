@@ -1,5 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { AppSettings, defaultSettings, isTtsVoiceId } from '../domain/settings';
+import { AppSettings, defaultSettings, isMascotType, isTtsVoiceId } from '../domain/settings';
 
 const SETTINGS_KEY = 'plank-guide:settings';
 
@@ -31,6 +31,7 @@ export async function loadSettings(): Promise<AppSettings> {
       detailedGuideEnabled: isBoolean(parsed.detailedGuideEnabled)
         ? parsed.detailedGuideEnabled
         : defaultSettings.detailedGuideEnabled,
+      mascotType: isMascotType(parsed.mascotType) ? parsed.mascotType : defaultSettings.mascotType,
     };
   } catch (error) {
     if (__DEV__) console.warn('Settings are corrupted. Falling back to defaults.', error);
