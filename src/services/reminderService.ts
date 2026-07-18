@@ -1,11 +1,11 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
-import { AppSettings, ReminderHour } from '../domain/settings';
+import { AppSettings, ReminderHour, reminderHourOptions } from '../domain/settings';
 
-const REMINDER_ID = 'daily-plank-reminder';
+const REMINDER_ID_PREFIX = 'daily-plank-reminder-';
 const ANDROID_CHANNEL_ID = 'reminder';
 
-// expo-notifications는 웹 로컬 알림 스케줄링을 지원하지 않는다.
+// expo-notifications는 웹 로컬 알림 스케줄링을 지원하지 않으므로 no-op으로 안전하게 처리한다.
 export const reminderSupported = Platform.OS !== 'web';
 
 export async function ensureReminderPermission(): Promise<boolean> {
@@ -30,29 +30,37 @@ async function ensureAndroidChannel(): Promise<void> {
   });
 }
 
-export async function scheduleDailyReminder(hour: ReminderHour): Promise<void> {
+export async function cancelDailyReminders(): Promise<void> {
   if (!reminderSupported) return;
-  await ensureAndroidChannel();
-  await Notifications.cancelScheduledNotificationAsync(REMINDER_ID).catch(() => undefined);
-  await Notifications.scheduleNotificationAsync({
-    identifier: REMINDER_ID,
-    content: {
-      title: '플랭크 할 시간이에요! 🐥',
-      body: '오늘도 코어를 깨워볼까요? 연속 기록을 이어가요.',
-      sound: 'default',
-    },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DAILY,
-      hour,
-      minute: 0,
-      channelId: ANDROID_CHANNEL_ID,
-    },
-  });
+  await Promise.all(
+    reminderHourOptions.map((hour) =>
+      Notifications.cancelScheduledNotificationAsync(`${REMINDER_ID_PREFIX}${hour}`).catch(
+        () => undefined,
+      ),
+    ),
+  );
 }
 
-export async function cancelDailyReminder(): Promise<void> {
+export async function scheduleDailyReminders(hours: ReminderHour[]): Promise<void> {
   if (!reminderSupported) return;
-  await Notifications.cancelScheduledNotificationAsync(REMINDER_ID).catch(() => undefined);
+  await ensureAndroidChannel();
+  await cancelDailyReminders();
+  for (const hour of hours) {
+    await Notifications.scheduleNotificationAsync({
+      identifier: `${REMINDER_ID_PREFIX}${hour}`,
+      content: {
+        title: '플랭크 할 시간이에요! 🐥',
+        body: '오늘도 코어를 깨워볼까요? 연속 기록을 이어가요.',
+        sound: 'default',
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.DAILY,
+        hour,
+        minute: 0,
+        channelId: ANDROID_CHANNEL_ID,
+      },
+    });
+  }
 }
 
 // 앱 시작 시 재동기화. 권한 프롬프트는 띄우지 않고, 이미 허용된 경우에만 다시 예약한다.
@@ -61,7 +69,7 @@ export async function syncReminderOnLaunch(settings: AppSettings): Promise<void>
   try {
     const permission = await Notifications.getPermissionsAsync();
     if (!permission.granted) return;
-    await scheduleDailyReminder(settings.reminderHour);
+    await scheduleDailyReminders(settings.reminderHours);
   } catch (error) {
     if (__DEV__) console.warn('Reminder launch sync failed', error);
   }

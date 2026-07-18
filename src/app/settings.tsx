@@ -6,29 +6,45 @@ import { generatedTtsVoiceOptions } from '../assets/tts/googleTtsAssets';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { colors, radius, spacing } from '../constants/theme';
 import { deleteAllWorkoutRecords } from '../database/workoutRecordRepository';
-import { AppSettings, MascotType, ReminderHour, reminderHours, TtsVoiceId } from '../domain/settings';
+import {
+  AppSettings,
+  MascotType,
+  ReminderHour,
+  reminderHourOptions,
+  TtsVoiceId,
+} from '../domain/settings';
 import { AudioCueManager } from '../engine/AudioCueManager';
 import {
-  cancelDailyReminder,
+  cancelDailyReminders,
   ensureReminderPermission,
-  reminderSupported,
-  scheduleDailyReminder,
+  scheduleDailyReminders,
 } from '../services/reminderService';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useStatisticsStore } from '../stores/statisticsStore';
 
 type ToggleSettingKey = Exclude<
   keyof AppSettings,
-  'ttsVoiceId' | 'mascotType' | 'reminderEnabled' | 'reminderHour'
+  'ttsVoiceId' | 'mascotType' | 'reminderEnabled' | 'reminderHours'
 >;
 
 const reminderHourLabels: Record<ReminderHour, string> = {
+  6: '오전 6시',
   7: '오전 7시',
+  8: '오전 8시',
   12: '낮 12시',
+  15: '오후 3시',
   18: '오후 6시',
   20: '오후 8시',
   21: '오후 9시',
+  22: '오후 10시',
 };
+
+function formatReminderHours(hours: ReminderHour[]): string {
+  return [...hours]
+    .sort((left, right) => left - right)
+    .map((hour) => reminderHourLabels[hour])
+    .join(', ');
+}
 
 const mascotOptions: { id: MascotType; label: string; emoji: string; description: string }[] = [
   { id: 'chick', label: '병아리', emoji: '🐥', description: '노란 병아리 친구' },
@@ -105,10 +121,6 @@ export default function SettingsScreen() {
   }
 
   async function handleToggleReminder(value: boolean) {
-    if (!reminderSupported) {
-      setTestStatus('웹 버전에서는 알림을 지원하지 않습니다. 앱에서 이용해 주세요.');
-      return;
-    }
     try {
       if (value) {
         const granted = await ensureReminderPermission();
@@ -116,10 +128,13 @@ export default function SettingsScreen() {
           setTestStatus('알림 권한이 없어 리마인더를 켤 수 없습니다. 기기 설정에서 허용해 주세요.');
           return;
         }
-        await scheduleDailyReminder(settings.reminderHour);
-        setTestStatus(`매일 ${reminderHourLabels[settings.reminderHour]}에 알려드릴게요.`);
+        const hours: ReminderHour[] =
+          settings.reminderHours.length > 0 ? settings.reminderHours : [20];
+        if (settings.reminderHours.length === 0) await updateSetting('reminderHours', hours);
+        await scheduleDailyReminders(hours);
+        setTestStatus(`매일 ${formatReminderHours(hours)}에 알려드릴게요.`);
       } else {
-        await cancelDailyReminder();
+        await cancelDailyReminders();
         setTestStatus('운동 리마인더를 껐습니다.');
       }
       await updateSetting('reminderEnabled', value);
@@ -129,15 +144,27 @@ export default function SettingsScreen() {
     }
   }
 
-  async function handleSelectReminderHour(hour: ReminderHour) {
-    await updateSetting('reminderHour', hour);
-    if (settings.reminderEnabled && reminderSupported) {
-      try {
-        await scheduleDailyReminder(hour);
-        setTestStatus(`매일 ${reminderHourLabels[hour]}에 알려드릴게요.`);
-      } catch (error) {
-        if (__DEV__) console.warn('Reminder reschedule failed', error);
+  async function handleToggleReminderHour(hour: ReminderHour) {
+    const selected = new Set(settings.reminderHours);
+    if (selected.has(hour)) {
+      selected.delete(hour);
+    } else {
+      selected.add(hour);
+    }
+    const nextHours = [...selected].sort((left, right) => left - right);
+    await updateSetting('reminderHours', nextHours);
+
+    if (!settings.reminderEnabled) return;
+    try {
+      if (nextHours.length === 0) {
+        await cancelDailyReminders();
+        setTestStatus('알림 시간을 모두 해제했습니다. 시간을 하나 이상 선택해 주세요.');
+      } else {
+        await scheduleDailyReminders(nextHours);
+        setTestStatus(`매일 ${formatReminderHours(nextHours)}에 알려드릴게요.`);
       }
+    } catch (error) {
+      if (__DEV__) console.warn('Reminder reschedule failed', error);
     }
   }
 
@@ -273,29 +300,26 @@ export default function SettingsScreen() {
             <View style={[styles.voiceHeader, styles.reminderHeaderText]}>
               <Text style={styles.panelTitleInline}>운동 리마인더</Text>
               <Text style={styles.voiceDescription}>
-                {reminderSupported
-                  ? '매일 정해진 시간에 플랭크 알림을 보내드립니다.'
-                  : '웹 버전에서는 알림을 지원하지 않습니다. 앱에서 이용해 주세요.'}
+                매일 선택한 시간마다 플랭크 알림을 보내드립니다. 여러 시간을 함께 고를 수 있어요.
               </Text>
             </View>
             <Switch
-              value={settings.reminderEnabled && reminderSupported}
-              disabled={!reminderSupported}
+              value={settings.reminderEnabled}
               onValueChange={(value) => void handleToggleReminder(value)}
               trackColor={{ true: colors.primary, false: '#CBD5E1' }}
               thumbColor="#FFFFFF"
             />
           </View>
           <View style={styles.reminderHours}>
-            {reminderHours.map((hour) => {
-              const selected = settings.reminderHour === hour;
+            {reminderHourOptions.map((hour) => {
+              const selected = settings.reminderHours.includes(hour);
               return (
                 <Pressable
                   key={hour}
                   accessibilityRole="button"
-                  accessibilityLabel={`${reminderHourLabels[hour]} 알림 시간 선택`}
-                  disabled={!reminderSupported}
-                  onPress={() => void handleSelectReminderHour(hour)}
+                  accessibilityState={{ selected }}
+                  accessibilityLabel={`${reminderHourLabels[hour]} 알림 시간 ${selected ? '해제' : '선택'}`}
+                  onPress={() => void handleToggleReminderHour(hour)}
                   style={({ pressed }) => [
                     styles.reminderHourChip,
                     selected && styles.reminderHourChipSelected,

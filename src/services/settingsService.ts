@@ -3,8 +3,8 @@ import {
   AppSettings,
   defaultSettings,
   isMascotType,
-  isReminderHour,
   isTtsVoiceId,
+  sanitizeReminderHours,
 } from '../domain/settings';
 
 const SETTINGS_KEY = 'plank-guide:settings';
@@ -41,9 +41,7 @@ export async function loadSettings(): Promise<AppSettings> {
       reminderEnabled: isBoolean(parsed.reminderEnabled)
         ? parsed.reminderEnabled
         : defaultSettings.reminderEnabled,
-      reminderHour: isReminderHour(parsed.reminderHour)
-        ? parsed.reminderHour
-        : defaultSettings.reminderHour,
+      reminderHours: sanitizeReminderHours(parsed.reminderHours),
     };
   } catch (error) {
     if (__DEV__) console.warn('Settings are corrupted. Falling back to defaults.', error);

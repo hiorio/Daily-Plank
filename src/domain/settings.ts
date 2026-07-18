@@ -27,14 +27,20 @@ export function isMascotType(value: unknown): value is MascotType {
   return typeof value === 'string' && mascotTypes.includes(value as MascotType);
 }
 
-export const reminderHours = [7, 12, 18, 20, 21] as const;
+export const reminderHourOptions = [6, 7, 8, 12, 15, 18, 20, 21, 22] as const;
 
-export type ReminderHour = (typeof reminderHours)[number];
+export type ReminderHour = (typeof reminderHourOptions)[number];
 
-export const defaultReminderHour: ReminderHour = 20;
+export const defaultReminderHours: ReminderHour[] = [20];
 
 export function isReminderHour(value: unknown): value is ReminderHour {
-  return typeof value === 'number' && reminderHours.includes(value as ReminderHour);
+  return typeof value === 'number' && reminderHourOptions.includes(value as ReminderHour);
+}
+
+export function sanitizeReminderHours(value: unknown): ReminderHour[] {
+  if (!Array.isArray(value)) return [...defaultReminderHours];
+  const valid = value.filter(isReminderHour);
+  return [...new Set(valid)].sort((left, right) => left - right);
 }
 
 export interface AppSettings {
@@ -48,7 +54,7 @@ export interface AppSettings {
   detailedGuideEnabled: boolean;
   mascotType: MascotType;
   reminderEnabled: boolean;
-  reminderHour: ReminderHour;
+  reminderHours: ReminderHour[];
 }
 
 export const defaultSettings: AppSettings = {
@@ -62,5 +68,5 @@ export const defaultSettings: AppSettings = {
   detailedGuideEnabled: true,
   mascotType: defaultMascotType,
   reminderEnabled: false,
-  reminderHour: defaultReminderHour,
+  reminderHours: [...defaultReminderHours],
 };
