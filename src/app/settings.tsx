@@ -46,6 +46,9 @@ function formatReminderHours(hours: ReminderHour[]): string {
     .join(', ');
 }
 
+// 아직 다듬는 중인 화면 요소는 코드를 남긴 채 렌더링만 감춘다. 되살릴 때 플래그만 켜면 된다.
+const OPTIONAL_PANELS = { reminder: false, diagnostics: false };
+
 const mascotOptions: { id: MascotType; label: string; emoji: string; description: string }[] = [
   { id: 'chick', label: '병아리', emoji: '🐥', description: '노란 병아리 친구' },
   { id: 'cat', label: '고양이', emoji: '🐱', description: '회색 고양이 친구' },
@@ -295,47 +298,49 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        <View style={styles.voicePanel}>
-          <View style={styles.reminderHeaderRow}>
-            <View style={[styles.voiceHeader, styles.reminderHeaderText]}>
-              <Text style={styles.panelTitleInline}>운동 리마인더</Text>
-              <Text style={styles.voiceDescription}>
-                매일 선택한 시간마다 플랭크 알림을 보내드립니다. 여러 시간을 함께 고를 수 있어요.
-              </Text>
+        {OPTIONAL_PANELS.reminder ? (
+          <View style={styles.voicePanel}>
+            <View style={styles.reminderHeaderRow}>
+              <View style={[styles.voiceHeader, styles.reminderHeaderText]}>
+                <Text style={styles.panelTitleInline}>운동 리마인더</Text>
+                <Text style={styles.voiceDescription}>
+                  매일 선택한 시간마다 플랭크 알림을 보내드립니다. 여러 시간을 함께 고를 수 있어요.
+                </Text>
+              </View>
+              <Switch
+                value={settings.reminderEnabled}
+                onValueChange={(value) => void handleToggleReminder(value)}
+                trackColor={{ true: colors.primary, false: '#CBD5E1' }}
+                thumbColor="#FFFFFF"
+              />
             </View>
-            <Switch
-              value={settings.reminderEnabled}
-              onValueChange={(value) => void handleToggleReminder(value)}
-              trackColor={{ true: colors.primary, false: '#CBD5E1' }}
-              thumbColor="#FFFFFF"
-            />
-          </View>
-          <View style={styles.reminderHours}>
-            {reminderHourOptions.map((hour) => {
-              const selected = settings.reminderHours.includes(hour);
-              return (
-                <Pressable
-                  key={hour}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected }}
-                  accessibilityLabel={`${reminderHourLabels[hour]} 알림 시간 ${selected ? '해제' : '선택'}`}
-                  onPress={() => void handleToggleReminderHour(hour)}
-                  style={({ pressed }) => [
-                    styles.reminderHourChip,
-                    selected && styles.reminderHourChipSelected,
-                    pressed && styles.pressedButton,
-                  ]}
-                >
-                  <Text
-                    style={[styles.reminderHourText, selected && styles.reminderHourTextSelected]}
+            <View style={styles.reminderHours}>
+              {reminderHourOptions.map((hour) => {
+                const selected = settings.reminderHours.includes(hour);
+                return (
+                  <Pressable
+                    key={hour}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                    accessibilityLabel={`${reminderHourLabels[hour]} 알림 시간 ${selected ? '해제' : '선택'}`}
+                    onPress={() => void handleToggleReminderHour(hour)}
+                    style={({ pressed }) => [
+                      styles.reminderHourChip,
+                      selected && styles.reminderHourChipSelected,
+                      pressed && styles.pressedButton,
+                    ]}
                   >
-                    {reminderHourLabels[hour]}
-                  </Text>
-                </Pressable>
-              );
-            })}
+                    <Text
+                      style={[styles.reminderHourText, selected && styles.reminderHourTextSelected]}
+                    >
+                      {reminderHourLabels[hour]}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
-        </View>
+        ) : null}
 
         <View style={styles.testPanel}>
           <View style={styles.testHeader}>
@@ -380,7 +385,7 @@ export default function SettingsScreen() {
           {testStatus ? <Text style={styles.testStatus}>{testStatus}</Text> : null}
         </View>
 
-        {__DEV__ ? (
+        {OPTIONAL_PANELS.diagnostics ? (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="진단 화면으로 이동"
