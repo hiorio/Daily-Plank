@@ -27,6 +27,16 @@ export function isMascotType(value: unknown): value is MascotType {
   return typeof value === 'string' && mascotTypes.includes(value as MascotType);
 }
 
+export const reminderHours = [7, 12, 18, 20, 21] as const;
+
+export type ReminderHour = (typeof reminderHours)[number];
+
+export const defaultReminderHour: ReminderHour = 20;
+
+export function isReminderHour(value: unknown): value is ReminderHour {
+  return typeof value === 'number' && reminderHours.includes(value as ReminderHour);
+}
+
 export interface AppSettings {
   voiceEnabled: boolean;
   ttsVoiceId: TtsVoiceId;
@@ -37,6 +47,8 @@ export interface AppSettings {
   keepAwakeEnabled: boolean;
   detailedGuideEnabled: boolean;
   mascotType: MascotType;
+  reminderEnabled: boolean;
+  reminderHour: ReminderHour;
 }
 
 export const defaultSettings: AppSettings = {
@@ -49,4 +61,6 @@ export const defaultSettings: AppSettings = {
   keepAwakeEnabled: true,
   detailedGuideEnabled: true,
   mascotType: defaultMascotType,
+  reminderEnabled: false,
+  reminderHour: defaultReminderHour,
 };

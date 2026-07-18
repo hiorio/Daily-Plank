@@ -6,12 +6,29 @@ import { generatedTtsVoiceOptions } from '../assets/tts/googleTtsAssets';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { colors, radius, spacing } from '../constants/theme';
 import { deleteAllWorkoutRecords } from '../database/workoutRecordRepository';
-import { AppSettings, MascotType, TtsVoiceId } from '../domain/settings';
+import { AppSettings, MascotType, ReminderHour, reminderHours, TtsVoiceId } from '../domain/settings';
 import { AudioCueManager } from '../engine/AudioCueManager';
+import {
+  cancelDailyReminder,
+  ensureReminderPermission,
+  reminderSupported,
+  scheduleDailyReminder,
+} from '../services/reminderService';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useStatisticsStore } from '../stores/statisticsStore';
 
-type ToggleSettingKey = Exclude<keyof AppSettings, 'ttsVoiceId' | 'mascotType'>;
+type ToggleSettingKey = Exclude<
+  keyof AppSettings,
+  'ttsVoiceId' | 'mascotType' | 'reminderEnabled' | 'reminderHour'
+>;
+
+const reminderHourLabels: Record<ReminderHour, string> = {
+  7: '오전 7시',
+  12: '낮 12시',
+  18: '오후 6시',
+  20: '오후 8시',
+  21: '오후 9시',
+};
 
 const mascotOptions: { id: MascotType; label: string; emoji: string; description: string }[] = [
   { id: 'chick', label: '병아리', emoji: '🐥', description: '노란 병아리 친구' },
@@ -85,6 +102,43 @@ export default function SettingsScreen() {
       setTestStatus('목소리를 변경해 재생 중이던 테스트 음성을 정지했습니다.');
     }
     await updateSetting('ttsVoiceId', voiceId);
+  }
+
+  async function handleToggleReminder(value: boolean) {
+    if (!reminderSupported) {
+      setTestStatus('웹 버전에서는 알림을 지원하지 않습니다. 앱에서 이용해 주세요.');
+      return;
+    }
+    try {
+      if (value) {
+        const granted = await ensureReminderPermission();
+        if (!granted) {
+          setTestStatus('알림 권한이 없어 리마인더를 켤 수 없습니다. 기기 설정에서 허용해 주세요.');
+          return;
+        }
+        await scheduleDailyReminder(settings.reminderHour);
+        setTestStatus(`매일 ${reminderHourLabels[settings.reminderHour]}에 알려드릴게요.`);
+      } else {
+        await cancelDailyReminder();
+        setTestStatus('운동 리마인더를 껐습니다.');
+      }
+      await updateSetting('reminderEnabled', value);
+    } catch (error) {
+      if (__DEV__) console.warn('Reminder toggle failed', error);
+      setTestStatus('리마인더 설정 중 오류가 발생했습니다.');
+    }
+  }
+
+  async function handleSelectReminderHour(hour: ReminderHour) {
+    await updateSetting('reminderHour', hour);
+    if (settings.reminderEnabled && reminderSupported) {
+      try {
+        await scheduleDailyReminder(hour);
+        setTestStatus(`매일 ${reminderHourLabels[hour]}에 알려드릴게요.`);
+      } catch (error) {
+        if (__DEV__) console.warn('Reminder reschedule failed', error);
+      }
+    }
   }
 
   async function runCueTest(type: 'sound' | 'haptic') {
@@ -204,6 +258,51 @@ export default function SettingsScreen() {
                   <Text style={styles.voiceMeta}>{mascot.description}</Text>
                   <Text style={[styles.voiceState, selected && styles.voiceStateSelected]}>
                     {selected ? '선택됨' : '선택'}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+
+        <View style={styles.voicePanel}>
+          <View style={styles.reminderHeaderRow}>
+            <View style={[styles.voiceHeader, styles.reminderHeaderText]}>
+              <Text style={styles.panelTitleInline}>운동 리마인더</Text>
+              <Text style={styles.voiceDescription}>
+                {reminderSupported
+                  ? '매일 정해진 시간에 플랭크 알림을 보내드립니다.'
+                  : '웹 버전에서는 알림을 지원하지 않습니다. 앱에서 이용해 주세요.'}
+              </Text>
+            </View>
+            <Switch
+              value={settings.reminderEnabled && reminderSupported}
+              disabled={!reminderSupported}
+              onValueChange={(value) => void handleToggleReminder(value)}
+              trackColor={{ true: colors.primary, false: '#CBD5E1' }}
+              thumbColor="#FFFFFF"
+            />
+          </View>
+          <View style={styles.reminderHours}>
+            {reminderHours.map((hour) => {
+              const selected = settings.reminderHour === hour;
+              return (
+                <Pressable
+                  key={hour}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${reminderHourLabels[hour]} 알림 시간 선택`}
+                  disabled={!reminderSupported}
+                  onPress={() => void handleSelectReminderHour(hour)}
+                  style={({ pressed }) => [
+                    styles.reminderHourChip,
+                    selected && styles.reminderHourChipSelected,
+                    pressed && styles.pressedButton,
+                  ]}
+                >
+                  <Text
+                    style={[styles.reminderHourText, selected && styles.reminderHourTextSelected]}
+                  >
+                    {reminderHourLabels[hour]}
                   </Text>
                 </Pressable>
               );
@@ -403,6 +502,43 @@ const styles = StyleSheet.create({
   },
   mascotEmoji: {
     fontSize: 30,
+  },
+  reminderHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  reminderHeaderText: {
+    flex: 1,
+    minWidth: 0,
+  },
+  reminderHours: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  reminderHourChip: {
+    minHeight: 40,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surfaceAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+  },
+  reminderHourChipSelected: {
+    borderColor: colors.primary,
+    backgroundColor: colors.primarySoft,
+  },
+  reminderHourText: {
+    color: colors.text,
+    fontWeight: '800',
+    fontSize: 13,
+  },
+  reminderHourTextSelected: {
+    color: colors.primaryDark,
   },
   voiceOption: {
     minHeight: 68,

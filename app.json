@@ -29,7 +29,8 @@
         }
       ],
       "expo-sqlite",
-      "expo-asset"
+      "expo-asset",
+      "expo-notifications"
     ],
     "ios": {
       "bundleIdentifier": "com.hiorio.dailyplank",

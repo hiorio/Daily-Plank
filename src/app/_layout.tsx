@@ -6,6 +6,7 @@ import { Mascot } from '../components/Mascot';
 import { appCopy } from '../constants/copy';
 import { initializeDatabase } from '../database/database';
 import { useAppLifecycle } from '../hooks/useAppLifecycle';
+import { syncReminderOnLaunch } from '../services/reminderService';
 import { buildWorkoutRecord, saveWorkoutRecord } from '../services/workoutRecordService';
 import { useCustomSessionStore } from '../stores/customSessionStore';
 import { useMascotStore } from '../stores/mascotStore';
@@ -33,6 +34,7 @@ export default function RootLayout() {
         await hydrateCustomSessions();
         await checkRecoverableWorkout();
         void greetOnLaunch();
+        void syncReminderOnLaunch(useSettingsStore.getState().settings);
       } catch (error) {
         Alert.alert('초기화 오류', '앱 데이터를 준비하지 못했다. 다시 실행해 주세요.');
         if (__DEV__) console.error(error);
