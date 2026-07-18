@@ -29,7 +29,7 @@ const BOTTOM_MARGIN = 170;
 type MascotMode = 'roam' | 'celebrate' | 'plank' | 'proud' | 'hidden';
 
 function modeForPathname(pathname: string): MascotMode {
-  if (pathname.startsWith('/workout')) return 'plank';
+  if (pathname.startsWith('/workout') || pathname.startsWith('/free-plank')) return 'plank';
   if (pathname.startsWith('/session')) return 'hidden';
   if (pathname.startsWith('/complete')) return 'celebrate';
   if (pathname.startsWith('/history')) return 'proud';

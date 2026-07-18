@@ -90,6 +90,17 @@ export async function getWorkoutRecordById(recordId: string): Promise<WorkoutRec
   return row ? fromRow(row) : null;
 }
 
+export async function getBestCompletedDurationForSession(sessionId: string): Promise<number> {
+  const db = await getDatabase();
+  const row = await db.getFirstAsync<{ best: number | null }>(
+    `SELECT MAX(actual_duration_seconds) AS best
+     FROM workout_record
+     WHERE session_id = ? AND status = 'COMPLETED'`,
+    [sessionId],
+  );
+  return row?.best ?? 0;
+}
+
 export async function deleteAllWorkoutRecords(): Promise<void> {
   const db = await getDatabase();
   await db.runAsync('DELETE FROM workout_record');

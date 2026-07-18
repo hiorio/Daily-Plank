@@ -4,9 +4,10 @@ import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { StatCard } from '../components/StatCard';
 import { colors, radius, spacing } from '../constants/theme';
-import { getWorkoutRecordsBetween } from '../database/workoutRecordRepository';
+import { getRecentWorkoutRecords, getWorkoutRecordsBetween } from '../database/workoutRecordRepository';
 import { WorkoutRecord } from '../domain/workoutRecord';
 import { useWorkoutStatistics } from '../hooks/useWorkoutStatistics';
+import { BadgeStatus, evaluateBadges } from '../services/badgeService';
 import {
   buildMonthlyWorkoutSummary,
   buildWeeklyWorkoutSummary,
@@ -23,9 +24,20 @@ const WEEKDAY_LABELS = ['월', '화', '수', '목', '금', '토', '일'];
 export default function HistoryScreen() {
   const router = useRouter();
   const [records, setRecords] = useState<WorkoutRecord[]>([]);
+  const [badges, setBadges] = useState<BadgeStatus[]>(() => evaluateBadges([]));
   const [viewMode, setViewMode] = useState<HistoryViewMode>('week');
   const [monthCursor, setMonthCursor] = useState(() => startOfLocalMonth(new Date()));
   const { statistics } = useWorkoutStatistics();
+
+  useFocusEffect(
+    useCallback(() => {
+      void getRecentWorkoutRecords(1000)
+        .then((allRecords) => setBadges(evaluateBadges(allRecords)))
+        .catch((error) => {
+          if (__DEV__) console.warn('Badge load failed', error);
+        });
+    }, []),
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -145,6 +157,7 @@ export default function HistoryScreen() {
             <Text style={styles.emptyText}>선택한 기간에 완료하거나 중간 종료한 운동이 여기에 표시됩니다.</Text>
           </View>
         }
+        ListFooterComponent={<BadgePanel badges={badges} />}
         renderItem={({ item }) => (
           <View style={styles.record}>
             <View style={styles.recordIcon}>
@@ -171,6 +184,30 @@ export default function HistoryScreen() {
         )}
       />
     </SafeAreaView>
+  );
+}
+
+function BadgePanel({ badges }: { badges: BadgeStatus[] }) {
+  const earnedCount = badges.filter((badge) => badge.earned).length;
+
+  return (
+    <View style={styles.badgePanel}>
+      <View style={styles.badgeHeader}>
+        <Text style={styles.badgeTitle}>성취 배지</Text>
+        <Text style={styles.badgeCount}>
+          {earnedCount} / {badges.length}
+        </Text>
+      </View>
+      <View style={styles.badgeGrid}>
+        {badges.map((badge) => (
+          <View key={badge.id} style={[styles.badgeItem, !badge.earned && styles.badgeItemLocked]}>
+            <Text style={styles.badgeEmoji}>{badge.earned ? badge.emoji : '🔒'}</Text>
+            <Text style={styles.badgeName}>{badge.title}</Text>
+            <Text style={styles.badgeDescription}>{badge.description}</Text>
+          </View>
+        ))}
+      </View>
+    </View>
   );
 }
 
@@ -419,6 +456,32 @@ const styles = StyleSheet.create({
   monthDayTextActive: { color: '#FFFFFF' },
   monthCountText: { color: '#FFFFFF', fontSize: 9, fontWeight: '900' },
   sectionTitle: { color: colors.text, fontSize: 17, fontWeight: '900' },
+  badgePanel: {
+    marginTop: spacing.lg,
+    borderRadius: radius.xl,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.lg,
+    gap: spacing.md,
+  },
+  badgeHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  badgeTitle: { color: colors.text, fontSize: 17, fontWeight: '900' },
+  badgeCount: { color: colors.primary, fontSize: 14, fontWeight: '900' },
+  badgeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+  badgeItem: {
+    flexBasis: '30%',
+    flexGrow: 1,
+    borderRadius: radius.md,
+    backgroundColor: colors.surfaceAlt,
+    padding: spacing.md,
+    alignItems: 'center',
+    gap: 3,
+  },
+  badgeItemLocked: { opacity: 0.45 },
+  badgeEmoji: { fontSize: 26 },
+  badgeName: { color: colors.text, fontSize: 13, fontWeight: '900', textAlign: 'center' },
+  badgeDescription: { color: colors.muted, fontSize: 11, fontWeight: '700', textAlign: 'center' },
   empty: {
     backgroundColor: colors.surface,
     borderRadius: radius.lg,
