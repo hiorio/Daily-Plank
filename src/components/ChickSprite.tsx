@@ -11,6 +11,8 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { GROWTH_SCALE, MascotCrown, MascotGrowthLevel } from './MascotCrown';
+
 // HTML 시안(chick-mascot)과 동일한 도형 구성을 View로 이식한 병아리 스프라이트.
 export type ChickPose = 'idle' | 'run' | 'jump' | 'plank' | 'greet' | 'proud';
 
@@ -29,9 +31,10 @@ const SWEAT = '#7EB6FF';
 
 interface ChickSpriteProps {
   pose: ChickPose;
+  level?: MascotGrowthLevel;
 }
 
-export function ChickSprite({ pose }: ChickSpriteProps) {
+export function ChickSprite({ pose, level = 1 }: ChickSpriteProps) {
   const bob = useSharedValue(0);
   const tilt = useSharedValue(0);
   const squash = useSharedValue(1);
@@ -160,11 +163,13 @@ export function ChickSprite({ pose }: ChickSpriteProps) {
     }
   }, [blink, bob, legSwing, pose, squash, sweat, tilt, wingWave]);
 
+  const growthScale = GROWTH_SCALE[level];
   const wrapperStyle = useAnimatedStyle(() => ({
     transform: [
       { translateY: bob.value },
       { rotate: `${tilt.value}deg` },
       { scaleY: squash.value },
+      { scale: growthScale },
     ],
   }));
   const eyeStyle = useAnimatedStyle(() => ({ transform: [{ scaleY: blink.value }] }));
@@ -205,6 +210,7 @@ export function ChickSprite({ pose }: ChickSpriteProps) {
         <View style={[styles.plankLeg, { left: 78 }]} />
         <View style={[styles.plankLeg, { left: 68 }]} />
         <Animated.View style={[styles.sweatDrop, sweatStyle]} />
+        {level === 3 ? <MascotCrown left={14} top={-8} /> : null}
       </Animated.View>
     );
   }
@@ -217,6 +223,7 @@ export function ChickSprite({ pose }: ChickSpriteProps) {
     <Animated.View style={[styles.wrapper, wrapperStyle]}>
       <View style={styles.body} />
       <View style={styles.tuft} />
+      {level === 3 ? <MascotCrown left={31} top={-6} /> : null}
       {proud ? (
         <>
           <View style={[styles.smileEye, { left: 22 }]} />

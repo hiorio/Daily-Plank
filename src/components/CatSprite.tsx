@@ -11,6 +11,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { ChickPose, CHICK_HEIGHT, CHICK_PLANK_HEIGHT, CHICK_PLANK_WIDTH, CHICK_WIDTH } from './ChickSprite';
+import { GROWTH_SCALE, MascotCrown, MascotGrowthLevel } from './MascotCrown';
 
 // 병아리와 동일한 포즈·크기·애니메이션 엔진을 쓰되 회색 고양이 외형으로 그린 스프라이트.
 export type CatPose = ChickPose;
@@ -26,9 +27,10 @@ const SWEAT = '#7EB6FF';
 
 interface CatSpriteProps {
   pose: CatPose;
+  level?: MascotGrowthLevel;
 }
 
-export function CatSprite({ pose }: CatSpriteProps) {
+export function CatSprite({ pose, level = 1 }: CatSpriteProps) {
   const bob = useSharedValue(0);
   const tilt = useSharedValue(0);
   const squash = useSharedValue(1);
@@ -170,8 +172,14 @@ export function CatSprite({ pose }: CatSpriteProps) {
     }
   }, [blink, bob, legSwing, pose, squash, sweat, tail, tilt, wingWave]);
 
+  const growthScale = GROWTH_SCALE[level];
   const wrapperStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: bob.value }, { rotate: `${tilt.value}deg` }, { scaleY: squash.value }],
+    transform: [
+      { translateY: bob.value },
+      { rotate: `${tilt.value}deg` },
+      { scaleY: squash.value },
+      { scale: growthScale },
+    ],
   }));
   const eyeStyle = useAnimatedStyle(() => ({ transform: [{ scaleY: blink.value }] }));
   const legLeftStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${legSwing.value}deg` }] }));
@@ -211,6 +219,7 @@ export function CatSprite({ pose }: CatSpriteProps) {
         <View style={[styles.plankLeg, { left: 78 }]} />
         <View style={[styles.plankLeg, { left: 68 }]} />
         <Animated.View style={[styles.sweatDrop, sweatStyle]} />
+        {level === 3 ? <MascotCrown left={12} top={-10} /> : null}
       </Animated.View>
     );
   }
@@ -230,6 +239,7 @@ export function CatSprite({ pose }: CatSpriteProps) {
       <View style={[styles.ear, styles.earR]}>
         <View style={[styles.earInner, styles.earInnerR]} />
       </View>
+      {level === 3 ? <MascotCrown left={31} top={-9} /> : null}
       {proud ? (
         <>
           <View style={[styles.smileEye, { left: 22 }]} />

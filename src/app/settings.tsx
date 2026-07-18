@@ -236,7 +236,10 @@ export default function SettingsScreen() {
         <View style={styles.voicePanel}>
           <View style={styles.voiceHeader}>
             <Text style={styles.panelTitleInline}>마스코트 캐릭터</Text>
-            <Text style={styles.voiceDescription}>앱을 돌아다니며 응원하는 캐릭터를 고릅니다.</Text>
+            <Text style={styles.voiceDescription}>
+              앱을 돌아다니며 응원하는 캐릭터를 고릅니다. 운동한 날이 7일, 21일 쌓이면 캐릭터가
+              자랍니다.
+            </Text>
           </View>
           <View style={styles.mascotOptions}>
             {mascotOptions.map((mascot) => {

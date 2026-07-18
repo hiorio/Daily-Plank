@@ -263,7 +263,12 @@ export default function WorkoutScreen() {
           </Text>
         </View>
 
-        <WorkoutTimer seconds={snapshot.stepRemainingSeconds} label={statusLabel} resting={isRest} />
+        <WorkoutTimer
+          seconds={snapshot.stepRemainingSeconds}
+          totalSeconds={currentStep?.durationSeconds}
+          label={statusLabel}
+          resting={isRest}
+        />
 
         <ExerciseGuide
           exercise={currentExercise}

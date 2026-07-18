@@ -41,6 +41,8 @@ export function Mascot() {
   const mode = modeForPathname(pathname ?? '/');
   const message = useMascotStore((store) => store.message);
   const say = useMascotStore((store) => store.say);
+  const growthLevel = useMascotStore((store) => store.growthLevel);
+  const refreshGrowth = useMascotStore((store) => store.refreshGrowth);
   const mascotType = useSettingsStore((store) => store.settings.mascotType);
   const { width, height } = useWindowDimensions();
   const [isMoving, setIsMoving] = useState(false);
@@ -100,9 +102,9 @@ export function Mascot() {
     let targetY = Math.max(TOP_MARGIN, height * 0.3);
 
     if (mode === 'plank') {
-      // 운동 화면: 우측 하단 구석에서 함께 플랭크. 중앙 콘텐츠를 가리지 않는다.
+      // 운동 화면: 우측 하단 구석에서 함께 플랭크. 하단 고정 컨트롤 바 위에 자리한다.
       targetX = width - CHICK_PLANK_WIDTH - EDGE_MARGIN_X;
-      targetY = Math.max(TOP_MARGIN, height - CHICK_PLANK_HEIGHT - 24);
+      targetY = Math.max(TOP_MARGIN, height - CHICK_PLANK_HEIGHT - 132);
     } else if (mode === 'proud') {
       // 기록 화면: 우측 하단 구석에서 뿌듯하게 응원.
       targetX = width - CHICK_WIDTH - EDGE_MARGIN_X;
@@ -119,6 +121,7 @@ export function Mascot() {
     if (mode === 'celebrate' && celebratedPathRef.current !== pathname) {
       celebratedPathRef.current = pathname;
       say('와, 오늘 운동 완료! 정말 대단해요!');
+      void refreshGrowth();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [height, mode, pathname, say, width]);
@@ -159,7 +162,11 @@ export function Mascot() {
           </View>
         ) : null}
         <Animated.View style={faceStyle}>
-          {mascotType === 'cat' ? <CatSprite pose={pose} /> : <ChickSprite pose={pose} />}
+          {mascotType === 'cat' ? (
+            <CatSprite pose={pose} level={growthLevel} />
+          ) : (
+            <ChickSprite pose={pose} level={growthLevel} />
+          )}
         </Animated.View>
       </Animated.View>
     </View>

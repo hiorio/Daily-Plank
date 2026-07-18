@@ -1,24 +1,67 @@
+import * as Sharing from 'expo-sharing';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { Platform, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { captureRef } from 'react-native-view-shot';
+import { CatSprite } from '../components/CatSprite';
+import { ChickSprite } from '../components/ChickSprite';
 import { StatCard } from '../components/StatCard';
 import { colors, radius, spacing } from '../constants/theme';
 import { getWorkoutRecordById } from '../database/workoutRecordRepository';
 import { WorkoutRecord } from '../domain/workoutRecord';
 import { useWorkoutStatistics } from '../hooks/useWorkoutStatistics';
+import { useMascotStore } from '../stores/mascotStore';
+import { useSettingsStore } from '../stores/settingsStore';
 import { formatDurationKorean } from '../utils/duration';
 
 export default function CompleteScreen() {
   const router = useRouter();
   const { recordId, sessionId } = useLocalSearchParams<{ recordId?: string; sessionId?: string }>();
   const [record, setRecord] = useState<WorkoutRecord | null>(null);
+  const [shareStatus, setShareStatus] = useState<string | null>(null);
   const { statistics } = useWorkoutStatistics();
+  const mascotType = useSettingsStore((store) => store.settings.mascotType);
+  const growthLevel = useMascotStore((store) => store.growthLevel);
+  const shareCardRef = useRef<View>(null);
 
   useEffect(() => {
     if (!recordId) return;
     void getWorkoutRecordById(recordId).then(setRecord);
   }, [recordId]);
+
+  const shareDateLabel = new Date().toLocaleDateString('ko-KR', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  });
+
+  function buildShareMessage(): string {
+    const duration = formatDurationKorean(record?.actualDurationSeconds ?? 0);
+    const rate = Math.round(record?.completionRate ?? 0);
+    const streakPart = statistics.streakDays >= 2 ? ` · 연속 ${statistics.streakDays}일째` : '';
+    return `오늘 ${record?.sessionTitle ?? '플랭크'} 완료! ${duration} 운동 · 완료율 ${rate}%${streakPart} 💪 #매일플랭크`;
+  }
+
+  async function handleShare() {
+    try {
+      if (Platform.OS !== 'web') {
+        try {
+          const uri = await captureRef(shareCardRef, { format: 'png', quality: 1 });
+          if (await Sharing.isAvailableAsync()) {
+            await Sharing.shareAsync(uri.startsWith('file://') ? uri : `file://${uri}`);
+            return;
+          }
+        } catch (error) {
+          if (__DEV__) console.warn('Share card capture failed', error);
+        }
+      }
+      await Share.share({ message: buildShareMessage() });
+    } catch (error) {
+      if (__DEV__) console.warn('Share failed', error);
+      setShareStatus('이 환경에서는 공유를 지원하지 않습니다.');
+    }
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -59,7 +102,41 @@ export default function CompleteScreen() {
           </View>
         </View>
 
+        <View ref={shareCardRef} collapsable={false} style={styles.shareCard}>
+          <View style={styles.shareCardHeader}>
+            <View style={styles.shareCardText}>
+              <Text style={styles.shareCardEyebrow}>매일 플랭크 · {shareDateLabel}</Text>
+              <Text style={styles.shareCardTitle}>{record?.sessionTitle ?? '오늘의 플랭크'} 완료!</Text>
+            </View>
+            {mascotType === 'cat' ? (
+              <CatSprite pose="proud" level={growthLevel} />
+            ) : mascotType === 'chick' ? (
+              <ChickSprite pose="proud" level={growthLevel} />
+            ) : null}
+          </View>
+          <View style={styles.shareCardStats}>
+            <View style={styles.shareCardStat}>
+              <Text style={styles.shareCardStatValue}>
+                {formatDurationKorean(record?.actualDurationSeconds ?? 0)}
+              </Text>
+              <Text style={styles.shareCardStatLabel}>운동 시간</Text>
+            </View>
+            <View style={styles.shareCardStat}>
+              <Text style={styles.shareCardStatValue}>{Math.round(record?.completionRate ?? 0)}%</Text>
+              <Text style={styles.shareCardStatLabel}>완료율</Text>
+            </View>
+            <View style={styles.shareCardStat}>
+              <Text style={styles.shareCardStatValue}>{statistics.streakDays}일</Text>
+              <Text style={styles.shareCardStatLabel}>연속 운동</Text>
+            </View>
+          </View>
+        </View>
+
         <View style={styles.actions}>
+          <Pressable onPress={() => void handleShare()} style={styles.shareButton}>
+            <Text style={styles.shareButtonText}>성과 카드 공유하기</Text>
+          </Pressable>
+          {shareStatus ? <Text style={styles.shareStatus}>{shareStatus}</Text> : null}
           <Pressable onPress={() => router.replace('/')} style={styles.primaryButton}>
             <Text style={styles.primaryText}>홈으로 이동</Text>
           </Pressable>
@@ -133,6 +210,42 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
   progressFill: { height: '100%', borderRadius: 99, backgroundColor: colors.primary },
+  shareCard: {
+    borderRadius: radius.xl,
+    backgroundColor: colors.primary,
+    padding: spacing.lg,
+    gap: spacing.md,
+    overflow: 'hidden',
+  },
+  shareCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  shareCardText: { flex: 1, minWidth: 0, gap: spacing.xs },
+  shareCardEyebrow: { color: 'rgba(255,255,255,0.75)', fontSize: 12, fontWeight: '900' },
+  shareCardTitle: { color: '#FFFFFF', fontSize: 21, fontWeight: '900' },
+  shareCardStats: { flexDirection: 'row', gap: spacing.sm },
+  shareCardStat: {
+    flex: 1,
+    borderRadius: radius.md,
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+    gap: 2,
+  },
+  shareCardStatValue: { color: '#FFFFFF', fontSize: 17, fontWeight: '900' },
+  shareCardStatLabel: { color: 'rgba(255,255,255,0.75)', fontSize: 11, fontWeight: '800' },
+  shareButton: {
+    minHeight: 54,
+    borderRadius: radius.lg,
+    backgroundColor: colors.accent,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  shareButtonText: { color: '#FFFFFF', fontWeight: '900', fontSize: 15 },
+  shareStatus: { color: colors.muted, fontWeight: '700', textAlign: 'center' },
   actions: { gap: spacing.md, marginTop: spacing.sm },
   primaryButton: {
     minHeight: 58,

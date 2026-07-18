@@ -1,18 +1,30 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
+import { MascotGrowthLevel } from '../components/MascotCrown';
 import { getRecentWorkoutRecords } from '../database/workoutRecordRepository';
 import { calculateWorkoutStatistics } from '../services/statisticsService';
 import { startOfLocalDay, toLocalDateKey } from '../utils/date';
 
 const LAST_VISIT_KEY = 'plank-guide:mascot-last-visit';
 const DEFAULT_MESSAGE_DURATION_MS = 6500;
+// 누적 운동일(중복 없는 날짜 수) 기준 성장 문턱.
+const GROWTH_LEVEL_2_DAYS = 7;
+const GROWTH_LEVEL_3_DAYS = 21;
 
 interface MascotStore {
   message: string | null;
   greeted: boolean;
+  growthLevel: MascotGrowthLevel;
   say: (message: string, durationMs?: number) => void;
   clearMessage: () => void;
   greetOnLaunch: () => Promise<void>;
+  refreshGrowth: () => Promise<void>;
+}
+
+function growthLevelForDays(workoutDayCount: number): MascotGrowthLevel {
+  if (workoutDayCount >= GROWTH_LEVEL_3_DAYS) return 3;
+  if (workoutDayCount >= GROWTH_LEVEL_2_DAYS) return 2;
+  return 1;
 }
 
 let messageTimer: ReturnType<typeof setTimeout> | null = null;
@@ -51,6 +63,7 @@ function buildGreeting(context: GreetingContext): string {
 export const useMascotStore = create<MascotStore>((set, get) => ({
   message: null,
   greeted: false,
+  growthLevel: 1,
   say: (message, durationMs = DEFAULT_MESSAGE_DURATION_MS) => {
     if (messageTimer) clearTimeout(messageTimer);
     set({ message });
@@ -90,14 +103,33 @@ export const useMascotStore = create<MascotStore>((set, get) => ({
     let streakDays = 0;
     let hasWorkedOutToday = false;
     try {
-      const records = await getRecentWorkoutRecords(365);
+      const records = await getRecentWorkoutRecords(1000);
       const statistics = calculateWorkoutStatistics(records, now);
       streakDays = statistics.streakDays;
       hasWorkedOutToday = statistics.hasWorkedOutToday;
+      const workoutDayCount = new Set(
+        records
+          .filter((record) => record.status === 'COMPLETED')
+          .map((record) => toLocalDateKey(new Date(record.startedAt))),
+      ).size;
+      set({ growthLevel: growthLevelForDays(workoutDayCount) });
     } catch (error) {
       if (__DEV__) console.warn('Mascot statistics lookup failed', error);
     }
 
     get().say(buildGreeting({ isFirstVisit, daysSinceLastVisit, streakDays, hasWorkedOutToday }));
+  },
+  refreshGrowth: async () => {
+    try {
+      const records = await getRecentWorkoutRecords(1000);
+      const workoutDayCount = new Set(
+        records
+          .filter((record) => record.status === 'COMPLETED')
+          .map((record) => toLocalDateKey(new Date(record.startedAt))),
+      ).size;
+      set({ growthLevel: growthLevelForDays(workoutDayCount) });
+    } catch (error) {
+      if (__DEV__) console.warn('Mascot growth refresh failed', error);
+    }
   },
 }));
