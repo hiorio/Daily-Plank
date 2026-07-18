@@ -5,7 +5,7 @@
     "scheme": "dailyplank",
     "version": "0.1.2",
     "orientation": "portrait",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "icon": "./src/assets/branding/icon.png",
     "assetBundlePatterns": [
       "**/*"

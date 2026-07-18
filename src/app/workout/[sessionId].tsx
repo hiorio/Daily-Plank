@@ -156,7 +156,7 @@ export default function WorkoutScreen() {
         await clearSession();
         router.replace(`/complete?recordId=${record.id}&sessionId=${session.id}`);
       } catch (error) {
-        Alert.alert('湲곕줉 ????ㅻ쪟', '?대룞 湲곕줉????ν븯吏 紐삵뻽?듬땲??');
+        Alert.alert('기록 저장 오류', '운동 기록을 저장하지 못했습니다.');
         if (__DEV__) console.error(error);
       }
       return;
@@ -274,6 +274,8 @@ export default function WorkoutScreen() {
           detailed={settings.detailedGuideEnabled}
         />
         <NextStepPreview nextStepTitle={snapshot.nextStep?.title ?? null} />
+      </ScrollView>
+      <View style={[styles.controlsBar, isRest && styles.restControlsBar]}>
         <WorkoutControls
           paused={snapshot.status === 'PAUSED'}
           onPrevious={() => void handlePrevious()}
@@ -281,7 +283,7 @@ export default function WorkoutScreen() {
           onNext={() => void handleNext()}
           onExit={() => void handleExitPress()}
         />
-      </ScrollView>
+      </View>
       <ConfirmModal
         visible={exitVisible}
         title="운동을 종료할까요?"
@@ -308,6 +310,19 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl,
   },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  // 운동 중 조작 버튼은 스크롤과 무관하게 항상 하단에 보여야 한다.
+  controlsBar: {
+    width: '100%',
+    maxWidth: 430,
+    alignSelf: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.md,
+    backgroundColor: colors.surfaceAlt,
+  },
+  restControlsBar: {
+    backgroundColor: colors.accentSoft,
+  },
   completionShell: {
     flex: 1,
     justifyContent: 'center',
