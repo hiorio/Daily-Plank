@@ -47,14 +47,15 @@
       "versionCode": 1,
       "adaptiveIcon": {
         "foregroundImage": "./src/assets/branding/adaptive-icon.png",
-        "backgroundColor": "#179AF2"
+        "backgroundColor": "#1E86E0"
       },
       "permissions": [
         "android.permission.MODIFY_AUDIO_SETTINGS"
       ]
     },
     "web": {
-      "bundler": "metro"
+      "bundler": "metro",
+      "favicon": "./src/assets/branding/icon.png"
     },
     "experiments": {
       "typedRoutes": true,
