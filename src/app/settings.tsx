@@ -52,6 +52,9 @@ const mascotOptions: { id: MascotType; label: string; emoji: string; description
   { id: 'none', label: '보이지 않기', emoji: '🚫', description: '마스코트 숨기기' },
 ];
 
+// 운동 리마인더(로컬 알림) 항목 노출 여부. false면 설정에서 숨겨져 알림 권한을 요청하지 않는다.
+const reminderFeatureEnabled = false;
+
 const rows: { key: ToggleSettingKey; label: string; description: string; marker: string }[] = [
   { key: 'voiceEnabled', label: '음성 안내', description: '동작 시작과 주요 알림을 TTS로 안내합니다.', marker: 'V' },
   { key: 'soundEnabled', label: '효과음', description: '동작 전환 및 진행 알림에 효과음을 재생합니다.', marker: 'S' },
@@ -295,47 +298,49 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        <View style={styles.voicePanel}>
-          <View style={styles.reminderHeaderRow}>
-            <View style={[styles.voiceHeader, styles.reminderHeaderText]}>
-              <Text style={styles.panelTitleInline}>운동 리마인더</Text>
-              <Text style={styles.voiceDescription}>
-                매일 선택한 시간마다 플랭크 알림을 보내드립니다. 여러 시간을 함께 고를 수 있어요.
-              </Text>
+        {reminderFeatureEnabled ? (
+          <View style={styles.voicePanel}>
+            <View style={styles.reminderHeaderRow}>
+              <View style={[styles.voiceHeader, styles.reminderHeaderText]}>
+                <Text style={styles.panelTitleInline}>운동 리마인더</Text>
+                <Text style={styles.voiceDescription}>
+                  매일 선택한 시간마다 플랭크 알림을 보내드립니다. 여러 시간을 함께 고를 수 있어요.
+                </Text>
+              </View>
+              <Switch
+                value={settings.reminderEnabled}
+                onValueChange={(value) => void handleToggleReminder(value)}
+                trackColor={{ true: colors.primary, false: '#CBD5E1' }}
+                thumbColor="#FFFFFF"
+              />
             </View>
-            <Switch
-              value={settings.reminderEnabled}
-              onValueChange={(value) => void handleToggleReminder(value)}
-              trackColor={{ true: colors.primary, false: '#CBD5E1' }}
-              thumbColor="#FFFFFF"
-            />
-          </View>
-          <View style={styles.reminderHours}>
-            {reminderHourOptions.map((hour) => {
-              const selected = settings.reminderHours.includes(hour);
-              return (
-                <Pressable
-                  key={hour}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected }}
-                  accessibilityLabel={`${reminderHourLabels[hour]} 알림 시간 ${selected ? '해제' : '선택'}`}
-                  onPress={() => void handleToggleReminderHour(hour)}
-                  style={({ pressed }) => [
-                    styles.reminderHourChip,
-                    selected && styles.reminderHourChipSelected,
-                    pressed && styles.pressedButton,
-                  ]}
-                >
-                  <Text
-                    style={[styles.reminderHourText, selected && styles.reminderHourTextSelected]}
+            <View style={styles.reminderHours}>
+              {reminderHourOptions.map((hour) => {
+                const selected = settings.reminderHours.includes(hour);
+                return (
+                  <Pressable
+                    key={hour}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                    accessibilityLabel={`${reminderHourLabels[hour]} 알림 시간 ${selected ? '해제' : '선택'}`}
+                    onPress={() => void handleToggleReminderHour(hour)}
+                    style={({ pressed }) => [
+                      styles.reminderHourChip,
+                      selected && styles.reminderHourChipSelected,
+                      pressed && styles.pressedButton,
+                    ]}
                   >
-                    {reminderHourLabels[hour]}
-                  </Text>
-                </Pressable>
-              );
-            })}
+                    <Text
+                      style={[styles.reminderHourText, selected && styles.reminderHourTextSelected]}
+                    >
+                      {reminderHourLabels[hour]}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
-        </View>
+        ) : null}
 
         <View style={styles.testPanel}>
           <View style={styles.testHeader}>
