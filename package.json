@@ -45,6 +45,7 @@
     "expo-speech": "56.0.3",
     "expo-splash-screen": "~56.0.12",
     "expo-sqlite": "56.0.5",
+    "expo-updates": "~56.0.21",
     "lottie-react-native": "7.3.8",
     "react": "19.2.3",
     "react-dom": "19.2.3",

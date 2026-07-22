@@ -7,6 +7,12 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "icon": "./src/assets/branding/icon.png",
+    "updates": {
+      "url": "https://u.expo.dev/2b9a08a4-d627-4722-844f-68ae70c10275"
+    },
+    "runtimeVersion": {
+      "policy": "fingerprint"
+    },
     "assetBundlePatterns": [
       "**/*"
     ],
