@@ -10,11 +10,14 @@ import Animated, {
 import { colors, radius, spacing } from '../constants/theme';
 import { useMascotStore } from '../stores/mascotStore';
 import { useSettingsStore } from '../stores/settingsStore';
+import { useWorkoutStore } from '../stores/workoutStore';
 import { CatSprite } from './CatSprite';
 import {
   CHICK_HEIGHT,
   CHICK_PLANK_HEIGHT,
   CHICK_PLANK_WIDTH,
+  CHICK_REST_HEIGHT,
+  CHICK_REST_WIDTH,
   CHICK_WIDTH,
   ChickPose,
   ChickSprite,
@@ -44,8 +47,19 @@ export function Mascot() {
   const growthLevel = useMascotStore((store) => store.growthLevel);
   const refreshGrowth = useMascotStore((store) => store.refreshGrowth);
   const mascotType = useSettingsStore((store) => store.settings.mascotType);
+  const workoutSession = useWorkoutStore((store) => store.session);
+  const workoutStepIndex = useWorkoutStore((store) => store.state.currentStepIndex);
+  const workoutStatus = useWorkoutStore((store) => store.state.status);
   const { width, height } = useWindowDimensions();
   const [isMoving, setIsMoving] = useState(false);
+
+  // 운동 화면의 휴식 구간(REST·COOLDOWN)에서만 쉬는 자세를 취한다.
+  // 준비(PREPARE) 단계와 시작 카운트다운은 제외한다.
+  const currentStepType = workoutSession?.steps[workoutStepIndex]?.type;
+  const isResting =
+    (pathname ?? '').startsWith('/workout') &&
+    workoutStatus !== 'COUNTDOWN' &&
+    (currentStepType === 'REST' || currentStepType === 'COOLDOWN');
 
   const x = useSharedValue(EDGE_MARGIN_X + 8);
   const y = useSharedValue(Math.max(TOP_MARGIN, height - BOTTOM_MARGIN - CHICK_HEIGHT));
@@ -102,9 +116,12 @@ export function Mascot() {
     let targetY = Math.max(TOP_MARGIN, height * 0.3);
 
     if (mode === 'plank') {
-      // 운동 화면: 우측 하단 구석에서 함께 플랭크. 하단 고정 컨트롤 바 위에 자리한다.
-      targetX = width - CHICK_PLANK_WIDTH - EDGE_MARGIN_X;
-      targetY = Math.max(TOP_MARGIN, height - CHICK_PLANK_HEIGHT - 132);
+      // 운동 화면: 우측 하단 구석에서 함께 플랭크(휴식 구간에는 앉아서 쉰다).
+      // 하단 고정 컨트롤 바 위에 자리한다.
+      const poseWidth = isResting ? CHICK_REST_WIDTH : CHICK_PLANK_WIDTH;
+      const poseHeight = isResting ? CHICK_REST_HEIGHT : CHICK_PLANK_HEIGHT;
+      targetX = width - poseWidth - EDGE_MARGIN_X;
+      targetY = Math.max(TOP_MARGIN, height - poseHeight - 132);
     } else if (mode === 'proud') {
       // 기록 화면: 우측 하단 구석에서 뿌듯하게 응원.
       targetX = width - CHICK_WIDTH - EDGE_MARGIN_X;
@@ -124,7 +141,7 @@ export function Mascot() {
       void refreshGrowth();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [height, mode, pathname, say, width]);
+  }, [height, isResting, mode, pathname, say, width]);
 
   const bodyStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: x.value }, { translateY: y.value }],
@@ -139,7 +156,9 @@ export function Mascot() {
     mode === 'celebrate'
       ? 'jump'
       : mode === 'plank'
-        ? 'plank'
+        ? isResting
+          ? 'rest'
+          : 'plank'
         : mode === 'proud'
           ? 'proud'
           : message

@@ -14,12 +14,14 @@ import Animated, {
 import { GROWTH_SCALE, MascotCrown, MascotGrowthLevel } from './MascotCrown';
 
 // HTML 시안(chick-mascot)과 동일한 도형 구성을 View로 이식한 병아리 스프라이트.
-export type ChickPose = 'idle' | 'run' | 'jump' | 'plank' | 'greet' | 'proud';
+export type ChickPose = 'idle' | 'run' | 'jump' | 'plank' | 'greet' | 'proud' | 'rest';
 
 export const CHICK_WIDTH = 82;
 export const CHICK_HEIGHT = 84;
 export const CHICK_PLANK_WIDTH = 96;
 export const CHICK_PLANK_HEIGHT = 62;
+export const CHICK_REST_WIDTH = 104;
+export const CHICK_REST_HEIGHT = 82;
 
 const YELLOW = '#FFD54F';
 const YELLOW_DARK = '#F5B800';
@@ -28,6 +30,27 @@ const ORANGE = '#FF9838';
 const INK = '#20242E';
 const BLUSH = '#FFAB91';
 const SWEAT = '#7EB6FF';
+const TOWEL = '#FFFFFF';
+const TOWEL_EDGE = '#DDE3EE';
+const BOTTLE = '#7EB6FF';
+const BOTTLE_DARK = '#5A97E8';
+
+const TAU = Math.PI * 2;
+// 휴식 포즈: 물병을 입가로 가져가 한 모금 마시고 다시 내리는 주기(0~1).
+export function restDrinkProgress(t: number): number {
+  'worklet';
+  if (t < 0.15) return 0;
+  if (t < 0.33) {
+    const u = (t - 0.15) / 0.18;
+    return u * u * (3 - 2 * u);
+  }
+  if (t < 0.62) return 1;
+  if (t < 0.82) {
+    const u = (t - 0.62) / 0.2;
+    return 1 - u * u * (3 - 2 * u);
+  }
+  return 0;
+}
 
 interface ChickSpriteProps {
   pose: ChickPose;
@@ -42,9 +65,10 @@ export function ChickSprite({ pose, level = 1 }: ChickSpriteProps) {
   const legSwing = useSharedValue(0);
   const wingWave = useSharedValue(0);
   const sweat = useSharedValue(0);
+  const restCycle = useSharedValue(0);
 
   useEffect(() => {
-    for (const value of [bob, tilt, legSwing, wingWave, sweat]) {
+    for (const value of [bob, tilt, legSwing, wingWave, sweat, restCycle]) {
       cancelAnimation(value);
       value.value = 0;
     }
@@ -161,7 +185,17 @@ export function ChickSprite({ pose, level = 1 }: ChickSpriteProps) {
       sweat.value = withRepeat(withTiming(1, { duration: 1600, easing: Easing.in(Easing.quad) }), -1, false);
       return;
     }
-  }, [blink, bob, legSwing, pose, squash, sweat, tilt, wingWave]);
+
+    if (pose === 'rest') {
+      // 하나의 선형 주기로 호흡·물 마시기·수건 흔들림을 함께 구동한다.
+      restCycle.value = withRepeat(
+        withTiming(1, { duration: 2400, easing: Easing.linear }),
+        -1,
+        false,
+      );
+      return;
+    }
+  }, [blink, bob, legSwing, pose, restCycle, squash, sweat, tilt, wingWave]);
 
   const growthScale = GROWTH_SCALE[level];
   const wrapperStyle = useAnimatedStyle(() => ({
@@ -189,6 +223,71 @@ export function ChickSprite({ pose, level = 1 }: ChickSpriteProps) {
     opacity: sweat.value < 0.25 ? sweat.value * 4 : 1 - sweat.value,
     transform: [{ translateY: sweat.value * 16 }, { scale: 0.6 + sweat.value * 0.4 }],
   }));
+
+  const restWrapperStyle = useAnimatedStyle(() => {
+    const t = restCycle.value;
+    return {
+      transform: [
+        { translateY: -3 * Math.sin(TAU * t) },
+        { rotate: `${-3 * restDrinkProgress(t)}deg` },
+        { scale: growthScale },
+      ],
+    };
+  });
+  // 물병 뚜껑이 부리에 닿도록 이동한 뒤 병 밑동만 살짝 들린다.
+  const restBottleStyle = useAnimatedStyle(() => {
+    const p = restDrinkProgress(restCycle.value);
+    return {
+      transform: [{ translateX: -40 * p }, { translateY: 10 * p }, { rotate: `${-42 * p}deg` }],
+    };
+  });
+  const restArmStyle = useAnimatedStyle(() => {
+    const p = restDrinkProgress(restCycle.value);
+    return {
+      transform: [{ translateX: -24 * p }, { translateY: 6 * p }, { rotate: `${-16 - 14 * p}deg` }],
+    };
+  });
+  const restTowelStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${6 + 5 * Math.sin(TAU * restCycle.value + 0.8)}deg` }],
+  }));
+  // 마시는 동안에만 눈을 감는다(중간 흐림 없이 또렷하게 전환).
+  const restEyeOpenStyle = useAnimatedStyle(() => ({
+    opacity: restDrinkProgress(restCycle.value) > 0.5 ? 0 : 1,
+  }));
+  const restEyeShutStyle = useAnimatedStyle(() => ({
+    opacity: restDrinkProgress(restCycle.value) > 0.5 ? 1 : 0,
+  }));
+
+  if (pose === 'rest') {
+    return (
+      <Animated.View style={[styles.restWrapper, restWrapperStyle]}>
+        <View style={styles.restBody} />
+        <View style={styles.restTuft} />
+        <Animated.View style={[styles.restEye, styles.restEyeL, restEyeOpenStyle]}>
+          <View style={styles.eyeHighlight} />
+        </Animated.View>
+        <Animated.View style={[styles.restEye, styles.restEyeR, restEyeOpenStyle]}>
+          <View style={styles.eyeHighlight} />
+        </Animated.View>
+        <Animated.View style={[styles.restEyeShut, styles.restEyeShutL, restEyeShutStyle]} />
+        <Animated.View style={[styles.restEyeShut, styles.restEyeShutR, restEyeShutStyle]} />
+        <View style={styles.restBeak} />
+        <View style={[styles.restBlush, { left: 16 }]} />
+        <View style={[styles.restBlush, { left: 62 }]} />
+        <View style={styles.restWing} />
+        <View style={styles.restTowel} />
+        <Animated.View style={[styles.restTowelEnd, restTowelStyle]} />
+        <View style={[styles.restLeg, { left: 24 }]} />
+        <View style={[styles.restLeg, { left: 46 }]} />
+        <Animated.View style={[styles.restArm, restArmStyle]} />
+        <Animated.View style={[styles.restBottle, restBottleStyle]}>
+          <View style={styles.restBottleBody} />
+          <View style={styles.restBottleCap} />
+        </Animated.View>
+        {level === 3 ? <MascotCrown left={31} top={0} /> : null}
+      </Animated.View>
+    );
+  }
 
   if (pose === 'plank') {
     return (
@@ -485,5 +584,164 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 3.5,
     borderBottomLeftRadius: 4.5,
     borderBottomRightRadius: 4.5,
+  },
+
+  restWrapper: { width: CHICK_REST_WIDTH, height: CHICK_REST_HEIGHT },
+  restBody: {
+    position: 'absolute',
+    left: 10,
+    top: 18,
+    width: 66,
+    height: 54,
+    backgroundColor: YELLOW,
+    borderWidth: 2,
+    borderColor: YELLOW_DARK,
+    borderTopLeftRadius: 33,
+    borderTopRightRadius: 33,
+    borderBottomLeftRadius: 26,
+    borderBottomRightRadius: 26,
+  },
+  restTuft: {
+    position: 'absolute',
+    left: 38,
+    top: 8,
+    width: 10,
+    height: 13,
+    backgroundColor: YELLOW,
+    borderWidth: 2,
+    borderColor: YELLOW_DARK,
+    borderTopLeftRadius: 6,
+    borderTopRightRadius: 6,
+    borderBottomRightRadius: 6,
+    transform: [{ rotate: '-25deg' }],
+  },
+  restEye: {
+    position: 'absolute',
+    top: 35,
+    width: 7,
+    height: 8,
+    backgroundColor: INK,
+    borderRadius: 4,
+  },
+  restEyeL: { left: 23 },
+  restEyeR: { left: 55 },
+  restEyeShut: {
+    position: 'absolute',
+    top: 37,
+    width: 10,
+    height: 6,
+    borderBottomWidth: 2.5,
+    borderColor: INK,
+    borderBottomLeftRadius: 8,
+    borderBottomRightRadius: 8,
+  },
+  restEyeShutL: { left: 21 },
+  restEyeShutR: { left: 53 },
+  restBeak: {
+    position: 'absolute',
+    left: 38,
+    top: 45,
+    width: 11,
+    height: 8,
+    backgroundColor: ORANGE,
+    borderTopLeftRadius: 2,
+    borderTopRightRadius: 2,
+    borderBottomLeftRadius: 6,
+    borderBottomRightRadius: 6,
+  },
+  restBlush: {
+    position: 'absolute',
+    top: 46,
+    width: 9,
+    height: 5,
+    backgroundColor: BLUSH,
+    borderRadius: 4,
+    opacity: 0.8,
+  },
+  restWing: {
+    position: 'absolute',
+    left: 3,
+    top: 46,
+    width: 14,
+    height: 20,
+    backgroundColor: WING_YELLOW,
+    borderWidth: 2,
+    borderColor: YELLOW_DARK,
+    borderRadius: 8,
+    transform: [{ rotate: '10deg' }],
+  },
+  restTowel: {
+    position: 'absolute',
+    left: 14,
+    top: 52,
+    width: 58,
+    height: 11,
+    backgroundColor: TOWEL,
+    borderWidth: 2,
+    borderColor: TOWEL_EDGE,
+    borderRadius: 6,
+  },
+  restTowelEnd: {
+    position: 'absolute',
+    left: 16,
+    top: 58,
+    width: 12,
+    height: 20,
+    backgroundColor: TOWEL,
+    borderWidth: 2,
+    borderColor: TOWEL_EDGE,
+    borderRadius: 5,
+    transformOrigin: '50% 0%',
+  },
+  restLeg: {
+    position: 'absolute',
+    top: 71,
+    width: 18,
+    height: 7,
+    backgroundColor: ORANGE,
+    borderRadius: 4,
+  },
+  restArm: {
+    position: 'absolute',
+    left: 64,
+    top: 48,
+    width: 16,
+    height: 10,
+    backgroundColor: WING_YELLOW,
+    borderWidth: 2,
+    borderColor: YELLOW_DARK,
+    borderRadius: 5,
+    transformOrigin: '0% 50%',
+  },
+  restBottle: {
+    position: 'absolute',
+    left: 76,
+    top: 36,
+    width: 16,
+    height: 30,
+    transformOrigin: '8px 2px',
+  },
+  restBottleBody: {
+    position: 'absolute',
+    left: 0,
+    top: 2,
+    width: 16,
+    height: 26,
+    backgroundColor: BOTTLE,
+    borderWidth: 2,
+    borderColor: BOTTLE_DARK,
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
+    borderBottomLeftRadius: 7,
+    borderBottomRightRadius: 7,
+  },
+  restBottleCap: {
+    position: 'absolute',
+    left: 5,
+    top: -4,
+    width: 6,
+    height: 7,
+    backgroundColor: BOTTLE_DARK,
+    borderRadius: 2,
   },
 });
