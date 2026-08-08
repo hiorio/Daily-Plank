@@ -253,6 +253,8 @@ export function CatSprite({ pose, level = 1 }: CatSpriteProps) {
     const w = restWipeProgress(t);
     const dab = 4 * Math.sin(TAU * 3 * t) * w;
     return {
+      // 포즈 전환 시 이전 스프라이트의 opacity가 남는 경우가 있어 매 프레임 명시한다.
+      opacity: 1,
       transform: [
         { translateX: 26 * w + dab },
         { translateY: -22 * w },
