@@ -256,8 +256,8 @@ export function CatSprite({ pose, level = 1 }: CatSpriteProps) {
       // 포즈 전환 시 이전 스프라이트의 opacity가 남는 경우가 있어 매 프레임 명시한다.
       opacity: 1,
       transform: [
-        { translateX: 26 * w + dab },
-        { translateY: -22 * w },
+        { translateX: 38 * w + dab },
+        { translateY: -32 * w },
         { rotate: `${-12 * w}deg` },
       ],
     };
@@ -765,9 +765,9 @@ const styles = StyleSheet.create({
     borderBottomLeftRadius: 3.5,
     borderBottomRightRadius: 3.5,
   },
-  restSweatDrop1: { left: 42, top: 19, width: 5, height: 6.5 },
-  restSweatDrop2: { left: 50, top: 23, width: 4.5, height: 6 },
-  restSweatDrop3: { left: 45, top: 28, width: 4, height: 5.5 },
+  restSweatDrop1: { left: 43, top: 24, width: 5, height: 6.5 },
+  restSweatDrop2: { left: 51, top: 27, width: 4.5, height: 6 },
+  restSweatDrop3: { left: 46, top: 32, width: 4, height: 5.5 },
   restWipe: {
     position: 'absolute',
     left: 2,
@@ -787,13 +787,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     transform: [{ rotate: '10deg' }],
   },
-  // 수건은 앞발 끝(위쪽 끝)에 걸쳐 쥔 것처럼 올려 둔다.
+  // 수건은 앞발 위치에 겹쳐 쥔 것처럼 둔다.
   restTowelCloth: {
     position: 'absolute',
-    left: -1,
-    top: -8,
+    left: -4,
+    top: 8,
     width: 18,
-    height: 11,
+    height: 12,
     backgroundColor: TOWEL,
     borderWidth: 2,
     borderColor: TOWEL_EDGE,
