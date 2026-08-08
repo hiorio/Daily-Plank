@@ -36,20 +36,42 @@ const BOTTLE = '#7EB6FF';
 const BOTTLE_DARK = '#5A97E8';
 
 const TAU = Math.PI * 2;
-// 휴식 포즈: 물병을 입가로 가져가 한 모금 마시고 다시 내리는 주기(0~1).
-export function restDrinkProgress(t: number): number {
+// 휴식 포즈 한 주기: 수건으로 땀을 닦고(앞쪽) → 물을 한 모금 마신다(뒤쪽).
+export function restWipeProgress(t: number): number {
   'worklet';
-  if (t < 0.15) return 0;
-  if (t < 0.33) {
-    const u = (t - 0.15) / 0.18;
+  if (t < 0.06) return 0;
+  if (t < 0.22) {
+    const u = (t - 0.06) / 0.16;
     return u * u * (3 - 2 * u);
   }
-  if (t < 0.62) return 1;
-  if (t < 0.82) {
-    const u = (t - 0.62) / 0.2;
+  if (t < 0.4) return 1;
+  if (t < 0.52) {
+    const u = (t - 0.4) / 0.12;
     return 1 - u * u * (3 - 2 * u);
   }
   return 0;
+}
+export function restDrinkProgress(t: number): number {
+  'worklet';
+  if (t < 0.58) return 0;
+  if (t < 0.7) {
+    const u = (t - 0.58) / 0.12;
+    return u * u * (3 - 2 * u);
+  }
+  if (t < 0.86) return 1;
+  if (t < 0.96) {
+    const u = (t - 0.86) / 0.1;
+    return 1 - u * u * (3 - 2 * u);
+  }
+  return 0;
+}
+// 땀방울: 닦기 전에는 맺혀 있다가 수건이 닿으면 사라지고, 주기 끝에 다시 맺힌다.
+export function restSweatOpacity(t: number): number {
+  'worklet';
+  if (t < 0.26) return 1;
+  if (t < 0.36) return 1 - (t - 0.26) / 0.1;
+  if (t < 0.92) return 0;
+  return (t - 0.92) / 0.08;
 }
 
 interface ChickSpriteProps {
@@ -189,7 +211,7 @@ export function ChickSprite({ pose, level = 1 }: ChickSpriteProps) {
     if (pose === 'rest') {
       // 하나의 선형 주기로 호흡·물 마시기·수건 흔들림을 함께 구동한다.
       restCycle.value = withRepeat(
-        withTiming(1, { duration: 2400, easing: Easing.linear }),
+        withTiming(1, { duration: 3200, easing: Easing.linear }),
         -1,
         false,
       );
@@ -247,8 +269,21 @@ export function ChickSprite({ pose, level = 1 }: ChickSpriteProps) {
       transform: [{ translateX: -24 * p }, { translateY: 6 * p }, { rotate: `${-16 - 14 * p}deg` }],
     };
   });
-  const restTowelStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${6 + 5 * Math.sin(TAU * restCycle.value + 0.8)}deg` }],
+  // 수건 든 손: 이마로 올라가 좌우로 톡톡 두드리며 땀을 닦는다.
+  const restWipeStyle = useAnimatedStyle(() => {
+    const t = restCycle.value;
+    const w = restWipeProgress(t);
+    const dab = 4 * Math.sin(TAU * 3 * t) * w;
+    return {
+      transform: [
+        { translateX: 26 * w + dab },
+        { translateY: -22 * w },
+        { rotate: `${-12 * w}deg` },
+      ],
+    };
+  });
+  const restSweatStyle = useAnimatedStyle(() => ({
+    opacity: restSweatOpacity(restCycle.value),
   }));
   // 마시는 동안에만 눈을 감는다(중간 흐림 없이 또렷하게 전환).
   const restEyeOpenStyle = useAnimatedStyle(() => ({
@@ -274,9 +309,11 @@ export function ChickSprite({ pose, level = 1 }: ChickSpriteProps) {
         <View style={styles.restBeak} />
         <View style={[styles.restBlush, { left: 16 }]} />
         <View style={[styles.restBlush, { left: 62 }]} />
-        <View style={styles.restWing} />
-        <View style={styles.restTowel} />
-        <Animated.View style={[styles.restTowelEnd, restTowelStyle]} />
+        <Animated.View style={[styles.restSweatDrop, restSweatStyle]} />
+        <Animated.View style={[styles.restWipe, restWipeStyle]}>
+          <View style={styles.restWipePaw} />
+          <View style={styles.restTowelCloth} />
+        </Animated.View>
         <View style={[styles.restLeg, { left: 24 }]} />
         <View style={[styles.restLeg, { left: 46 }]} />
         <Animated.View style={[styles.restArm, restArmStyle]} />
@@ -658,40 +695,47 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     opacity: 0.8,
   },
-  restWing: {
+  restSweatDrop: {
     position: 'absolute',
-    left: 3,
-    top: 46,
+    left: 44,
+    top: 22,
+    width: 7,
+    height: 9,
+    backgroundColor: SWEAT,
+    borderTopLeftRadius: 3.5,
+    borderTopRightRadius: 3.5,
+    borderBottomLeftRadius: 4.5,
+    borderBottomRightRadius: 4.5,
+  },
+  restWipe: {
+    position: 'absolute',
+    left: 2,
+    top: 44,
+    width: 28,
+    height: 24,
+  },
+  restWipePaw: {
+    position: 'absolute',
+    left: 0,
+    top: 4,
     width: 14,
-    height: 20,
+    height: 18,
     backgroundColor: WING_YELLOW,
     borderWidth: 2,
     borderColor: YELLOW_DARK,
     borderRadius: 8,
     transform: [{ rotate: '10deg' }],
   },
-  restTowel: {
+  restTowelCloth: {
     position: 'absolute',
-    left: 14,
-    top: 52,
-    width: 58,
-    height: 11,
-    backgroundColor: TOWEL,
-    borderWidth: 2,
-    borderColor: TOWEL_EDGE,
-    borderRadius: 6,
-  },
-  restTowelEnd: {
-    position: 'absolute',
-    left: 16,
-    top: 58,
-    width: 12,
-    height: 20,
+    left: 5,
+    top: -2,
+    width: 21,
+    height: 13,
     backgroundColor: TOWEL,
     borderWidth: 2,
     borderColor: TOWEL_EDGE,
     borderRadius: 5,
-    transformOrigin: '50% 0%',
   },
   restLeg: {
     position: 'absolute',

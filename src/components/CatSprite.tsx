@@ -19,6 +19,8 @@ import {
   CHICK_REST_WIDTH,
   CHICK_WIDTH,
   restDrinkProgress,
+  restSweatOpacity,
+  restWipeProgress,
 } from './ChickSprite';
 import { GROWTH_SCALE, MascotCrown, MascotGrowthLevel } from './MascotCrown';
 
@@ -190,7 +192,7 @@ export function CatSprite({ pose, level = 1 }: CatSpriteProps) {
     if (pose === 'rest') {
       // 병아리와 동일한 주기로 호흡·물 마시기·수건 흔들림을 구동한다.
       restCycle.value = withRepeat(
-        withTiming(1, { duration: 2400, easing: Easing.linear }),
+        withTiming(1, { duration: 3200, easing: Easing.linear }),
         -1,
         false,
       );
@@ -246,8 +248,20 @@ export function CatSprite({ pose, level = 1 }: CatSpriteProps) {
       transform: [{ translateX: -24 * p }, { translateY: 6 * p }, { rotate: `${-16 - 14 * p}deg` }],
     };
   });
-  const restTowelStyle = useAnimatedStyle(() => ({
-    transform: [{ rotate: `${6 + 5 * Math.sin(TAU * restCycle.value + 0.8)}deg` }],
+  const restWipeStyle = useAnimatedStyle(() => {
+    const t = restCycle.value;
+    const w = restWipeProgress(t);
+    const dab = 4 * Math.sin(TAU * 3 * t) * w;
+    return {
+      transform: [
+        { translateX: 26 * w + dab },
+        { translateY: -22 * w },
+        { rotate: `${-12 * w}deg` },
+      ],
+    };
+  });
+  const restSweatStyle = useAnimatedStyle(() => ({
+    opacity: restSweatOpacity(restCycle.value),
   }));
   const restEyeOpenStyle = useAnimatedStyle(() => ({
     opacity: restDrinkProgress(restCycle.value) > 0.5 ? 0 : 1,
@@ -277,9 +291,11 @@ export function CatSprite({ pose, level = 1 }: CatSpriteProps) {
         <View style={styles.restNose} />
         <View style={[styles.restBlush, { left: 16 }]} />
         <View style={[styles.restBlush, { left: 62 }]} />
-        <View style={styles.restPaw} />
-        <View style={styles.restTowel} />
-        <Animated.View style={[styles.restTowelEnd, restTowelStyle]} />
+        <Animated.View style={[styles.restSweatDrop, restSweatStyle]} />
+        <Animated.View style={[styles.restWipe, restWipeStyle]}>
+          <View style={styles.restWipePaw} />
+          <View style={styles.restTowelCloth} />
+        </Animated.View>
         <View style={[styles.restLeg, { left: 24 }]} />
         <View style={[styles.restLeg, { left: 46 }]} />
         <Animated.View style={[styles.restArm, restArmStyle]} />
@@ -731,40 +747,47 @@ const styles = StyleSheet.create({
     borderRadius: 4,
     opacity: 0.8,
   },
-  restPaw: {
+  restSweatDrop: {
     position: 'absolute',
-    left: 3,
-    top: 46,
+    left: 44,
+    top: 22,
+    width: 7,
+    height: 9,
+    backgroundColor: SWEAT,
+    borderTopLeftRadius: 3.5,
+    borderTopRightRadius: 3.5,
+    borderBottomLeftRadius: 4.5,
+    borderBottomRightRadius: 4.5,
+  },
+  restWipe: {
+    position: 'absolute',
+    left: 2,
+    top: 44,
+    width: 28,
+    height: 24,
+  },
+  restWipePaw: {
+    position: 'absolute',
+    left: 0,
+    top: 4,
     width: 14,
-    height: 20,
+    height: 18,
     backgroundColor: PAW_GREY,
     borderWidth: 2,
     borderColor: GREY_DARK,
     borderRadius: 8,
     transform: [{ rotate: '10deg' }],
   },
-  restTowel: {
+  restTowelCloth: {
     position: 'absolute',
-    left: 14,
-    top: 52,
-    width: 58,
-    height: 11,
-    backgroundColor: TOWEL,
-    borderWidth: 2,
-    borderColor: TOWEL_EDGE,
-    borderRadius: 6,
-  },
-  restTowelEnd: {
-    position: 'absolute',
-    left: 16,
-    top: 58,
-    width: 12,
-    height: 20,
+    left: 5,
+    top: -2,
+    width: 21,
+    height: 13,
     backgroundColor: TOWEL,
     borderWidth: 2,
     borderColor: TOWEL_EDGE,
     borderRadius: 5,
-    transformOrigin: '50% 0%',
   },
   restLeg: {
     position: 'absolute',
