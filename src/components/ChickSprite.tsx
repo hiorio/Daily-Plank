@@ -282,8 +282,15 @@ export function ChickSprite({ pose, level = 1 }: ChickSpriteProps) {
       ],
     };
   });
-  const restSweatStyle = useAnimatedStyle(() => ({
+  // 땀방울 3개는 살짝 시차를 두고 닦여 나간다.
+  const restSweatStyle1 = useAnimatedStyle(() => ({
     opacity: restSweatOpacity(restCycle.value),
+  }));
+  const restSweatStyle2 = useAnimatedStyle(() => ({
+    opacity: restSweatOpacity((restCycle.value + 0.03) % 1),
+  }));
+  const restSweatStyle3 = useAnimatedStyle(() => ({
+    opacity: restSweatOpacity((restCycle.value + 0.06) % 1),
   }));
   // 마시는 동안에만 눈을 감는다(중간 흐림 없이 또렷하게 전환).
   const restEyeOpenStyle = useAnimatedStyle(() => ({
@@ -309,7 +316,9 @@ export function ChickSprite({ pose, level = 1 }: ChickSpriteProps) {
         <View style={styles.restBeak} />
         <View style={[styles.restBlush, { left: 16 }]} />
         <View style={[styles.restBlush, { left: 62 }]} />
-        <Animated.View style={[styles.restSweatDrop, restSweatStyle]} />
+        <Animated.View style={[styles.restSweatDrop, styles.restSweatDrop1, restSweatStyle1]} />
+        <Animated.View style={[styles.restSweatDrop, styles.restSweatDrop2, restSweatStyle2]} />
+        <Animated.View style={[styles.restSweatDrop, styles.restSweatDrop3, restSweatStyle3]} />
         <Animated.View style={[styles.restWipe, restWipeStyle]}>
           <View style={styles.restWipePaw} />
           <View style={styles.restTowelCloth} />
@@ -697,16 +706,15 @@ const styles = StyleSheet.create({
   },
   restSweatDrop: {
     position: 'absolute',
-    left: 44,
-    top: 22,
-    width: 7,
-    height: 9,
     backgroundColor: SWEAT,
-    borderTopLeftRadius: 3.5,
-    borderTopRightRadius: 3.5,
-    borderBottomLeftRadius: 4.5,
-    borderBottomRightRadius: 4.5,
+    borderTopLeftRadius: 2.5,
+    borderTopRightRadius: 2.5,
+    borderBottomLeftRadius: 3.5,
+    borderBottomRightRadius: 3.5,
   },
+  restSweatDrop1: { left: 42, top: 19, width: 5, height: 6.5 },
+  restSweatDrop2: { left: 50, top: 23, width: 4.5, height: 6 },
+  restSweatDrop3: { left: 45, top: 28, width: 4, height: 5.5 },
   restWipe: {
     position: 'absolute',
     left: 2,
@@ -726,12 +734,13 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     transform: [{ rotate: '10deg' }],
   },
+  // 수건은 발끝(위쪽 끝)에 걸쳐 쥔 것처럼 손 위로 올려 둔다.
   restTowelCloth: {
     position: 'absolute',
-    left: 5,
-    top: -2,
-    width: 21,
-    height: 13,
+    left: -1,
+    top: -8,
+    width: 18,
+    height: 11,
     backgroundColor: TOWEL,
     borderWidth: 2,
     borderColor: TOWEL_EDGE,
