@@ -354,10 +354,10 @@ export function DogSprite({ pose, level = 1 }: DogSpriteProps) {
   return (
     <Animated.View style={[styles.wrapper, wrapperStyle]}>
       <Animated.View style={[styles.tail, tailStyle]} />
-      <View style={[styles.ear, styles.earL]} />
-      <View style={[styles.ear, styles.earR]} />
       <View style={styles.body} />
       <View style={styles.belly} />
+      <View style={[styles.ear, styles.earL]} />
+      <View style={[styles.ear, styles.earR]} />
       {level === 3 ? <MascotCrown left={31} top={-9} /> : null}
       {proud ? (
         <>
@@ -436,17 +436,17 @@ const styles = StyleSheet.create({
   // 강아지는 뾰족한 귀 대신 아래로 늘어진 귀를 쓴다.
   ear: {
     position: 'absolute',
-    top: 10,
+    top: 4,
     width: 19,
-    height: 36,
+    height: 27,
     backgroundColor: FUR_DARK,
     borderTopLeftRadius: 10,
     borderTopRightRadius: 10,
     borderBottomLeftRadius: 10,
     borderBottomRightRadius: 10,
   },
-  earL: { left: -2, transform: [{ rotate: '-8deg' }] },
-  earR: { left: 65, transform: [{ rotate: '8deg' }] },
+  earL: { left: 8, transform: [{ rotate: '20deg' }] },
+  earR: { left: 55, transform: [{ rotate: '-20deg' }] },
   eye: {
     position: 'absolute',
     top: 30,
