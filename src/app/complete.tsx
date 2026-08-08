@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { captureRef } from 'react-native-view-shot';
 import { CatSprite } from '../components/CatSprite';
 import { ChickSprite } from '../components/ChickSprite';
+import { DogSprite } from '../components/DogSprite';
 import { StatCard } from '../components/StatCard';
 import { colors, radius, spacing } from '../constants/theme';
 import { getWorkoutRecordById } from '../database/workoutRecordRepository';
@@ -110,6 +111,8 @@ export default function CompleteScreen() {
             </View>
             {mascotType === 'cat' ? (
               <CatSprite pose="proud" level={growthLevel} />
+            ) : mascotType === 'dog' ? (
+              <DogSprite pose="proud" level={growthLevel} />
             ) : mascotType === 'chick' ? (
               <ChickSprite pose="proud" level={growthLevel} />
             ) : null}

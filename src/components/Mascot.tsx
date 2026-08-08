@@ -12,6 +12,7 @@ import { useMascotStore } from '../stores/mascotStore';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useWorkoutStore } from '../stores/workoutStore';
 import { CatSprite } from './CatSprite';
+import { DogSprite } from './DogSprite';
 import {
   CHICK_HEIGHT,
   CHICK_PLANK_HEIGHT,
@@ -183,6 +184,8 @@ export function Mascot() {
         <Animated.View style={faceStyle}>
           {mascotType === 'cat' ? (
             <CatSprite pose={pose} level={growthLevel} />
+          ) : mascotType === 'dog' ? (
+            <DogSprite pose={pose} level={growthLevel} />
           ) : (
             <ChickSprite pose={pose} level={growthLevel} />
           )}

@@ -1,0 +1,865 @@
+import { useEffect } from 'react';
+import { StyleSheet, View } from 'react-native';
+import Animated, {
+  cancelAnimation,
+  Easing,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from 'react-native-reanimated';
+import {
+  ChickPose,
+  CHICK_HEIGHT,
+  CHICK_PLANK_HEIGHT,
+  CHICK_PLANK_WIDTH,
+  CHICK_REST_HEIGHT,
+  CHICK_REST_WIDTH,
+  CHICK_WIDTH,
+  restDrinkProgress,
+  restSweatOpacity,
+  restWipeProgress,
+} from './ChickSprite';
+import { GROWTH_SCALE, MascotCrown, MascotGrowthLevel } from './MascotCrown';
+
+// 병아리·고양이와 동일한 포즈·크기·애니메이션 엔진을 쓰되 갈색 강아지 외형으로 그린 스프라이트.
+export type DogPose = ChickPose;
+
+const FUR = '#E3AC6C';
+const FUR_DARK = '#C4873F';
+const PAW_FUR = '#D9A05E';
+const CREAM = '#F6EBDC';
+const NOSE_INK = '#4A3B32';
+const INK = '#20242E';
+const BLUSH = '#F7B7A8';
+const SWEAT = '#7EB6FF';
+const TOWEL = '#FFFFFF';
+const TOWEL_EDGE = '#DDE3EE';
+const BOTTLE = '#7EB6FF';
+const BOTTLE_DARK = '#5A97E8';
+
+const TAU = Math.PI * 2;
+
+interface DogSpriteProps {
+  pose: DogPose;
+  level?: MascotGrowthLevel;
+}
+
+export function DogSprite({ pose, level = 1 }: DogSpriteProps) {
+  const bob = useSharedValue(0);
+  const tilt = useSharedValue(0);
+  const squash = useSharedValue(1);
+  const blink = useSharedValue(1);
+  const legSwing = useSharedValue(0);
+  const wingWave = useSharedValue(0);
+  const sweat = useSharedValue(0);
+  const tail = useSharedValue(0);
+  const restCycle = useSharedValue(0);
+
+  useEffect(() => {
+    for (const value of [bob, tilt, legSwing, wingWave, sweat, tail, restCycle]) {
+      cancelAnimation(value);
+      value.value = 0;
+    }
+    cancelAnimation(squash);
+    squash.value = 1;
+    cancelAnimation(blink);
+    blink.value = 1;
+
+    const blinkLoop = () =>
+      withRepeat(
+        withSequence(
+          withDelay(3100, withTiming(0.12, { duration: 70 })),
+          withTiming(1, { duration: 90 }),
+        ),
+        -1,
+        false,
+      );
+    const tailLoop = (duration: number) =>
+      withRepeat(
+        withSequence(
+          withTiming(1, { duration, easing: Easing.inOut(Easing.quad) }),
+          withTiming(-1, { duration, easing: Easing.inOut(Easing.quad) }),
+        ),
+        -1,
+        true,
+      );
+
+    if (pose === 'idle' || pose === 'greet' || pose === 'proud') {
+      bob.value = withRepeat(
+        withSequence(
+          withTiming(-4, { duration: 1100, easing: Easing.inOut(Easing.quad) }),
+          withTiming(0, { duration: 1100, easing: Easing.inOut(Easing.quad) }),
+        ),
+        -1,
+        false,
+      );
+      tail.value = tailLoop(900);
+      if (pose !== 'proud') blink.value = blinkLoop();
+      if (pose === 'proud') {
+        squash.value = withRepeat(
+          withSequence(
+            withTiming(1.035, { duration: 1300, easing: Easing.inOut(Easing.quad) }),
+            withTiming(1, { duration: 1300, easing: Easing.inOut(Easing.quad) }),
+          ),
+          -1,
+          false,
+        );
+      }
+      if (pose === 'greet') {
+        wingWave.value = withRepeat(
+          withSequence(
+            withTiming(1, { duration: 350, easing: Easing.inOut(Easing.quad) }),
+            withTiming(0, { duration: 350, easing: Easing.inOut(Easing.quad) }),
+          ),
+          -1,
+          false,
+        );
+      }
+      return;
+    }
+
+    if (pose === 'run') {
+      tilt.value = 6;
+      tail.value = tailLoop(220);
+      bob.value = withRepeat(
+        withSequence(
+          withTiming(-7, { duration: 190, easing: Easing.out(Easing.quad) }),
+          withTiming(0, { duration: 190, easing: Easing.in(Easing.quad) }),
+        ),
+        -1,
+        false,
+      );
+      legSwing.value = withRepeat(
+        withSequence(
+          withTiming(38, { duration: 190, easing: Easing.inOut(Easing.quad) }),
+          withTiming(-38, { duration: 190, easing: Easing.inOut(Easing.quad) }),
+        ),
+        -1,
+        true,
+      );
+      return;
+    }
+
+    if (pose === 'jump') {
+      bob.value = withRepeat(
+        withSequence(
+          withTiming(-26, { duration: 380, easing: Easing.out(Easing.quad) }),
+          withTiming(-26, { duration: 220 }),
+          withTiming(0, { duration: 380, easing: Easing.in(Easing.quad) }),
+          withTiming(0, { duration: 120 }),
+        ),
+        -1,
+        false,
+      );
+      squash.value = withRepeat(
+        withSequence(
+          withTiming(1.05, { duration: 380 }),
+          withTiming(1.05, { duration: 220 }),
+          withTiming(0.94, { duration: 380 }),
+          withTiming(1, { duration: 120 }),
+        ),
+        -1,
+        false,
+      );
+      wingWave.value = withRepeat(
+        withSequence(
+          withTiming(1, { duration: 550, easing: Easing.inOut(Easing.quad) }),
+          withTiming(0, { duration: 550, easing: Easing.inOut(Easing.quad) }),
+        ),
+        -1,
+        false,
+      );
+      return;
+    }
+
+    if (pose === 'plank') {
+      tilt.value = withRepeat(
+        withSequence(
+          withTiming(1.4, { duration: 500, easing: Easing.inOut(Easing.quad) }),
+          withTiming(0, { duration: 500, easing: Easing.inOut(Easing.quad) }),
+        ),
+        -1,
+        false,
+      );
+      tail.value = tailLoop(650);
+      sweat.value = withRepeat(withTiming(1, { duration: 1600, easing: Easing.in(Easing.quad) }), -1, false);
+      return;
+    }
+
+    if (pose === 'rest') {
+      // 병아리와 동일한 주기로 호흡·물 마시기·수건 흔들림을 구동한다.
+      restCycle.value = withRepeat(
+        withTiming(1, { duration: 3200, easing: Easing.linear }),
+        -1,
+        false,
+      );
+      tail.value = tailLoop(1100);
+      return;
+    }
+  }, [blink, bob, legSwing, pose, restCycle, squash, sweat, tail, tilt, wingWave]);
+
+  const growthScale = GROWTH_SCALE[level];
+  const wrapperStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateY: bob.value },
+      { rotate: `${tilt.value}deg` },
+      { scaleY: squash.value },
+      { scale: growthScale },
+    ],
+  }));
+  const eyeStyle = useAnimatedStyle(() => ({ transform: [{ scaleY: blink.value }] }));
+  const legLeftStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${legSwing.value}deg` }] }));
+  const legRightStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${-legSwing.value}deg` }] }));
+  const wingWaveStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${-150 + wingWave.value * 50}deg` }],
+  }));
+  const wingJumpLeftStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${150 - wingWave.value * 30}deg` }],
+  }));
+  const sweatStyle = useAnimatedStyle(() => ({
+    opacity: sweat.value < 0.25 ? sweat.value * 4 : 1 - sweat.value,
+    transform: [{ translateY: sweat.value * 16 }, { scale: 0.6 + sweat.value * 0.4 }],
+  }));
+  const tailStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${tail.value * 18}deg` }] }));
+  const tailPlankStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${tail.value * 22}deg` }] }));
+
+  const restWrapperStyle = useAnimatedStyle(() => {
+    const t = restCycle.value;
+    return {
+      transform: [
+        { translateY: -3 * Math.sin(TAU * t) },
+        { rotate: `${-3 * restDrinkProgress(t)}deg` },
+        { scale: growthScale },
+      ],
+    };
+  });
+  const restBottleStyle = useAnimatedStyle(() => {
+    const p = restDrinkProgress(restCycle.value);
+    return {
+      transform: [{ translateX: -40 * p }, { translateY: 10 * p }, { rotate: `${-42 * p}deg` }],
+    };
+  });
+  const restArmStyle = useAnimatedStyle(() => {
+    const p = restDrinkProgress(restCycle.value);
+    return {
+      transform: [{ translateX: -24 * p }, { translateY: 6 * p }, { rotate: `${-16 - 14 * p}deg` }],
+    };
+  });
+  const restWipeStyle = useAnimatedStyle(() => {
+    const t = restCycle.value;
+    const w = restWipeProgress(t);
+    const dab = 4 * Math.sin(TAU * 3 * t) * w;
+    return {
+      // 포즈 전환 시 이전 스프라이트의 opacity가 남는 경우가 있어 매 프레임 명시한다.
+      opacity: 1,
+      transform: [
+        { translateX: 38 * w + dab },
+        { translateY: -32 * w },
+        { rotate: `${-12 * w}deg` },
+      ],
+    };
+  });
+  const restSweatStyle1 = useAnimatedStyle(() => ({
+    opacity: restSweatOpacity(restCycle.value),
+  }));
+  const restSweatStyle2 = useAnimatedStyle(() => ({
+    opacity: restSweatOpacity((restCycle.value + 0.03) % 1),
+  }));
+  const restSweatStyle3 = useAnimatedStyle(() => ({
+    opacity: restSweatOpacity((restCycle.value + 0.06) % 1),
+  }));
+  const restEyeOpenStyle = useAnimatedStyle(() => ({
+    opacity: restDrinkProgress(restCycle.value) > 0.5 ? 0 : 1,
+  }));
+  const restEyeShutStyle = useAnimatedStyle(() => ({
+    opacity: restDrinkProgress(restCycle.value) > 0.5 ? 1 : 0,
+  }));
+  const restTailStyle = useAnimatedStyle(() => ({
+    transform: [{ rotate: `${tail.value * 14}deg` }],
+  }));
+
+  if (pose === 'rest') {
+    return (
+      <Animated.View style={[styles.restWrapper, restWrapperStyle]}>
+        <Animated.View style={[styles.restTail, restTailStyle]} />
+        <View style={styles.restBody} />
+        <View style={[styles.restEar, styles.restEarL]} />
+        <View style={[styles.restEar, styles.restEarR]} />
+        <Animated.View style={[styles.restEye, styles.restEyeL, restEyeOpenStyle]}>
+          <View style={styles.eyeHighlight} />
+        </Animated.View>
+        <Animated.View style={[styles.restEye, styles.restEyeR, restEyeOpenStyle]}>
+          <View style={styles.eyeHighlight} />
+        </Animated.View>
+        <Animated.View style={[styles.restEyeShut, styles.restEyeShutL, restEyeShutStyle]} />
+        <Animated.View style={[styles.restEyeShut, styles.restEyeShutR, restEyeShutStyle]} />
+        <View style={styles.restMuzzle} />
+        <View style={styles.restNose} />
+        <View style={[styles.restBlush, { left: 16 }]} />
+        <View style={[styles.restBlush, { left: 62 }]} />
+        <Animated.View style={[styles.restSweatDrop, styles.restSweatDrop1, restSweatStyle1]} />
+        <Animated.View style={[styles.restSweatDrop, styles.restSweatDrop2, restSweatStyle2]} />
+        <Animated.View style={[styles.restSweatDrop, styles.restSweatDrop3, restSweatStyle3]} />
+        <Animated.View style={[styles.restWipe, restWipeStyle]}>
+          <View style={styles.restWipePaw} />
+          <View style={styles.restTowelCloth} />
+        </Animated.View>
+        <View style={[styles.restLeg, { left: 24 }]} />
+        <View style={[styles.restLeg, { left: 46 }]} />
+        <Animated.View style={[styles.restArm, restArmStyle]} />
+        <Animated.View style={[styles.restBottle, restBottleStyle]}>
+          <View style={styles.restBottleBody} />
+          <View style={styles.restBottleCap} />
+        </Animated.View>
+        {level === 3 ? <MascotCrown left={31} top={2} /> : null}
+      </Animated.View>
+    );
+  }
+
+  if (pose === 'plank') {
+    return (
+      <Animated.View style={[styles.plankWrapper, wrapperStyle]}>
+        <Animated.View style={[styles.plankTail, tailPlankStyle]} />
+        <View style={styles.plankBody} />
+        <View style={[styles.plankEar, styles.plankEarL]} />
+        <View style={[styles.plankEar, styles.plankEarR]} />
+        <View style={styles.plankMuzzle} />
+        <View style={[styles.plankBrow, styles.plankBrowL]} />
+        <View style={[styles.plankBrow, styles.plankBrowR]} />
+        <View style={[styles.plankEye, styles.plankEyeL]}>
+          <View style={styles.eyeHighlight} />
+        </View>
+        <View style={[styles.plankEye, styles.plankEyeR]}>
+          <View style={styles.eyeHighlight} />
+        </View>
+        <View style={styles.plankNose} />
+        <View style={styles.plankBlush} />
+        <View style={[styles.plankForearm, { left: 20 }]} />
+        <View style={[styles.plankForearm, { left: 34 }]} />
+        <View style={[styles.plankLeg, { left: 78 }]} />
+        <View style={[styles.plankLeg, { left: 68 }]} />
+        <Animated.View style={[styles.sweatDrop, sweatStyle]} />
+        {level === 3 ? <MascotCrown left={12} top={-10} /> : null}
+      </Animated.View>
+    );
+  }
+
+  const proud = pose === 'proud';
+  const jump = pose === 'jump';
+  const greet = pose === 'greet';
+
+  return (
+    <Animated.View style={[styles.wrapper, wrapperStyle]}>
+      <Animated.View style={[styles.tail, tailStyle]} />
+      <View style={styles.body} />
+      <View style={styles.belly} />
+      <View style={[styles.ear, styles.earL]} />
+      <View style={[styles.ear, styles.earR]} />
+      {level === 3 ? <MascotCrown left={31} top={-9} /> : null}
+      {proud ? (
+        <>
+          <View style={[styles.smileEye, { left: 22 }]} />
+          <View style={[styles.smileEye, { left: 46 }]} />
+        </>
+      ) : (
+        <>
+          <Animated.View style={[styles.eye, { left: 24 }, eyeStyle]}>
+            <View style={styles.eyeHighlight} />
+          </Animated.View>
+          <Animated.View style={[styles.eye, { left: 48 }, eyeStyle]}>
+            <View style={styles.eyeHighlight} />
+          </Animated.View>
+        </>
+      )}
+      <View style={styles.muzzle} />
+      <View style={styles.nose} />
+      <View style={styles.mouth} />
+      <View style={[styles.blush, { left: 12 }]} />
+      <View style={[styles.blush, { left: 61 }]} />
+      {jump ? (
+        <>
+          <Animated.View style={[styles.paw, styles.pawJumpL, wingJumpLeftStyle]} />
+          <Animated.View style={[styles.paw, styles.pawJumpR, wingWaveStyle]} />
+        </>
+      ) : greet ? (
+        <>
+          <View style={[styles.paw, styles.pawL]} />
+          <Animated.View style={[styles.paw, styles.pawGreetR, wingWaveStyle]} />
+        </>
+      ) : (
+        <>
+          <View style={[styles.paw, styles.pawL, pose === 'run' && styles.pawRunL]} />
+          <View style={[styles.paw, styles.pawR, pose === 'run' && styles.pawRunR]} />
+        </>
+      )}
+      <Animated.View style={[styles.leg, { left: 30 }, legLeftStyle]}>
+        <View style={styles.foot} />
+      </Animated.View>
+      <Animated.View style={[styles.leg, { left: 48 }, legRightStyle]}>
+        <View style={styles.foot} />
+      </Animated.View>
+    </Animated.View>
+  );
+}
+
+const styles = StyleSheet.create({
+  wrapper: { width: CHICK_WIDTH, height: CHICK_HEIGHT },
+  body: {
+    position: 'absolute',
+    left: 6,
+    top: 12,
+    width: 70,
+    height: 60,
+    backgroundColor: FUR,
+    borderWidth: 2,
+    borderColor: FUR_DARK,
+    borderTopLeftRadius: 33,
+    borderTopRightRadius: 33,
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+  },
+  belly: {
+    position: 'absolute',
+    left: 24,
+    top: 40,
+    width: 34,
+    height: 30,
+    backgroundColor: CREAM,
+    borderTopLeftRadius: 17,
+    borderTopRightRadius: 17,
+    borderBottomLeftRadius: 15,
+    borderBottomRightRadius: 15,
+  },
+  // 강아지는 뾰족한 귀 대신 아래로 늘어진 귀를 쓴다.
+  ear: {
+    position: 'absolute',
+    top: 14,
+    width: 17,
+    height: 32,
+    backgroundColor: FUR_DARK,
+    borderTopLeftRadius: 9,
+    borderTopRightRadius: 9,
+    borderBottomLeftRadius: 9,
+    borderBottomRightRadius: 9,
+  },
+  earL: { left: -1, transform: [{ rotate: '-12deg' }] },
+  earR: { left: 66, transform: [{ rotate: '12deg' }] },
+  eye: {
+    position: 'absolute',
+    top: 30,
+    width: 8,
+    height: 10,
+    backgroundColor: INK,
+    borderRadius: 5,
+  },
+  eyeHighlight: {
+    position: 'absolute',
+    top: 1,
+    left: 1.5,
+    width: 2.6,
+    height: 2.6,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 1.5,
+  },
+  smileEye: {
+    position: 'absolute',
+    top: 32,
+    width: 9,
+    height: 6,
+    borderBottomWidth: 2.5,
+    borderColor: INK,
+    borderBottomLeftRadius: 6,
+    borderBottomRightRadius: 6,
+  },
+  // 강아지: 크림색 주둥이 위에 검은 코와 입
+  muzzle: {
+    position: 'absolute',
+    left: 26,
+    top: 40,
+    width: 30,
+    height: 20,
+    backgroundColor: CREAM,
+    borderRadius: 12,
+  },
+  nose: {
+    position: 'absolute',
+    left: 36,
+    top: 42,
+    width: 10,
+    height: 7,
+    backgroundColor: NOSE_INK,
+    borderTopLeftRadius: 5,
+    borderTopRightRadius: 5,
+    borderBottomLeftRadius: 5,
+    borderBottomRightRadius: 5,
+  },
+  mouth: {
+    position: 'absolute',
+    left: 37,
+    top: 49,
+    width: 8,
+    height: 6,
+    borderBottomWidth: 2,
+    borderColor: NOSE_INK,
+    borderBottomLeftRadius: 6,
+    borderBottomRightRadius: 6,
+  },
+  blush: {
+    position: 'absolute',
+    top: 44,
+    width: 9,
+    height: 5,
+    backgroundColor: BLUSH,
+    borderRadius: 4,
+    opacity: 0.75,
+  },
+  tail: {
+    position: 'absolute',
+    left: 62,
+    top: 40,
+    width: 12,
+    height: 34,
+    backgroundColor: FUR,
+    borderWidth: 2,
+    borderColor: FUR_DARK,
+    borderRadius: 6,
+    transformOrigin: 'bottom left',
+  },
+  paw: {
+    position: 'absolute',
+    top: 44,
+    width: 15,
+    height: 20,
+    backgroundColor: PAW_FUR,
+    borderWidth: 2,
+    borderColor: FUR_DARK,
+    borderTopLeftRadius: 8,
+    borderTopRightRadius: 8,
+    borderBottomLeftRadius: 9,
+    borderBottomRightRadius: 9,
+  },
+  pawL: { left: 1, transform: [{ rotate: '16deg' }] },
+  pawR: { left: 66, transform: [{ rotate: '-16deg' }] },
+  pawRunL: { transform: [{ rotate: '32deg' }] },
+  pawRunR: { transform: [{ rotate: '-4deg' }] },
+  pawGreetR: { left: 66, top: 26 },
+  pawJumpL: { left: 2, top: 26 },
+  pawJumpR: { left: 65, top: 26 },
+  leg: {
+    position: 'absolute',
+    top: 68,
+    width: 5,
+    height: 12,
+    backgroundColor: PAW_FUR,
+    borderRadius: 2.5,
+  },
+  foot: {
+    position: 'absolute',
+    top: 9,
+    left: -3,
+    width: 11,
+    height: 5,
+    backgroundColor: PAW_FUR,
+    borderRadius: 2.5,
+  },
+
+  plankWrapper: { width: CHICK_PLANK_WIDTH, height: CHICK_PLANK_HEIGHT },
+  plankBody: {
+    position: 'absolute',
+    left: 2,
+    top: 14,
+    width: 92,
+    height: 42,
+    backgroundColor: FUR,
+    borderWidth: 2,
+    borderColor: FUR_DARK,
+    borderTopLeftRadius: 38,
+    borderTopRightRadius: 32,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+  },
+  plankEar: {
+    position: 'absolute',
+    top: 17,
+    width: 11,
+    height: 21,
+    backgroundColor: FUR_DARK,
+    borderRadius: 6,
+  },
+  plankEarL: { left: 1, transform: [{ rotate: '-16deg' }] },
+  plankEarR: { left: 43, transform: [{ rotate: '10deg' }] },
+  plankBrow: {
+    position: 'absolute',
+    top: 18,
+    width: 9,
+    height: 2.5,
+    backgroundColor: INK,
+    borderRadius: 2,
+  },
+  plankBrowL: { left: 16, transform: [{ rotate: '14deg' }] },
+  plankBrowR: { left: 34, transform: [{ rotate: '-6deg' }] },
+  plankEye: {
+    position: 'absolute',
+    top: 23,
+    width: 7,
+    height: 7,
+    backgroundColor: INK,
+    borderRadius: 4,
+  },
+  plankEyeL: { left: 16 },
+  plankEyeR: { left: 34 },
+  plankMuzzle: {
+    position: 'absolute',
+    left: 20,
+    top: 27,
+    width: 21,
+    height: 13,
+    backgroundColor: CREAM,
+    borderRadius: 8,
+  },
+  plankNose: {
+    position: 'absolute',
+    left: 26,
+    top: 29,
+    width: 9,
+    height: 6,
+    backgroundColor: NOSE_INK,
+    borderRadius: 4,
+  },
+  plankBlush: {
+    position: 'absolute',
+    left: 8,
+    top: 32,
+    width: 9,
+    height: 5,
+    backgroundColor: BLUSH,
+    borderRadius: 4,
+    opacity: 0.8,
+  },
+  plankForearm: {
+    position: 'absolute',
+    top: 48,
+    width: 9,
+    height: 14,
+    backgroundColor: PAW_FUR,
+    borderWidth: 2,
+    borderColor: FUR_DARK,
+    borderRadius: 4,
+  },
+  plankLeg: {
+    position: 'absolute',
+    top: 50,
+    width: 5,
+    height: 10,
+    backgroundColor: PAW_FUR,
+    borderRadius: 2.5,
+    transform: [{ rotate: '12deg' }],
+  },
+  plankTail: {
+    position: 'absolute',
+    left: 88,
+    top: 24,
+    width: 10,
+    height: 30,
+    backgroundColor: FUR,
+    borderWidth: 2,
+    borderColor: FUR_DARK,
+    borderRadius: 5,
+    transformOrigin: 'bottom left',
+  },
+  sweatDrop: {
+    position: 'absolute',
+    left: 8,
+    top: 4,
+    width: 7,
+    height: 9,
+    backgroundColor: SWEAT,
+    borderTopLeftRadius: 3.5,
+    borderTopRightRadius: 3.5,
+    borderBottomLeftRadius: 4.5,
+    borderBottomRightRadius: 4.5,
+  },
+
+  restWrapper: { width: CHICK_REST_WIDTH, height: CHICK_REST_HEIGHT },
+  restBody: {
+    position: 'absolute',
+    left: 10,
+    top: 18,
+    width: 66,
+    height: 54,
+    backgroundColor: FUR,
+    borderWidth: 2,
+    borderColor: FUR_DARK,
+    borderTopLeftRadius: 33,
+    borderTopRightRadius: 33,
+    borderBottomLeftRadius: 26,
+    borderBottomRightRadius: 26,
+  },
+  restEar: {
+    position: 'absolute',
+    top: 24,
+    width: 13,
+    height: 23,
+    backgroundColor: FUR_DARK,
+    borderRadius: 7,
+  },
+  restEarL: { left: 5, transform: [{ rotate: '-12deg' }] },
+  restEarR: { left: 68, transform: [{ rotate: '12deg' }] },
+  restEye: {
+    position: 'absolute',
+    top: 35,
+    width: 7,
+    height: 8,
+    backgroundColor: INK,
+    borderRadius: 4,
+  },
+  restEyeL: { left: 23 },
+  restEyeR: { left: 55 },
+  restEyeShut: {
+    position: 'absolute',
+    top: 37,
+    width: 10,
+    height: 6,
+    borderBottomWidth: 2.5,
+    borderColor: INK,
+    borderBottomLeftRadius: 8,
+    borderBottomRightRadius: 8,
+  },
+  restEyeShutL: { left: 21 },
+  restEyeShutR: { left: 53 },
+  restMuzzle: {
+    position: 'absolute',
+    left: 30,
+    top: 43,
+    width: 26,
+    height: 16,
+    backgroundColor: CREAM,
+    borderRadius: 9,
+  },
+  restNose: {
+    position: 'absolute',
+    left: 38,
+    top: 45,
+    width: 10,
+    height: 7,
+    backgroundColor: NOSE_INK,
+    borderRadius: 4,
+  },
+  restBlush: {
+    position: 'absolute',
+    top: 46,
+    width: 9,
+    height: 5,
+    backgroundColor: BLUSH,
+    borderRadius: 4,
+    opacity: 0.8,
+  },
+  restSweatDrop: {
+    position: 'absolute',
+    backgroundColor: SWEAT,
+    borderTopLeftRadius: 2.5,
+    borderTopRightRadius: 2.5,
+    borderBottomLeftRadius: 3.5,
+    borderBottomRightRadius: 3.5,
+  },
+  restSweatDrop1: { left: 43, top: 24, width: 5, height: 6.5 },
+  restSweatDrop2: { left: 51, top: 27, width: 4.5, height: 6 },
+  restSweatDrop3: { left: 46, top: 32, width: 4, height: 5.5 },
+  restWipe: {
+    position: 'absolute',
+    left: 2,
+    top: 44,
+    width: 28,
+    height: 24,
+  },
+  restWipePaw: {
+    position: 'absolute',
+    left: 0,
+    top: 4,
+    width: 14,
+    height: 18,
+    backgroundColor: PAW_FUR,
+    borderWidth: 2,
+    borderColor: FUR_DARK,
+    borderRadius: 8,
+    transform: [{ rotate: '10deg' }],
+  },
+  // 수건은 앞발 위치에 겹쳐 쥔 것처럼 둔다.
+  restTowelCloth: {
+    position: 'absolute',
+    left: -4,
+    top: 8,
+    width: 18,
+    height: 12,
+    backgroundColor: TOWEL,
+    borderWidth: 2,
+    borderColor: TOWEL_EDGE,
+    borderRadius: 5,
+  },
+  restLeg: {
+    position: 'absolute',
+    top: 71,
+    width: 18,
+    height: 7,
+    backgroundColor: PAW_FUR,
+    borderRadius: 4,
+  },
+  restArm: {
+    position: 'absolute',
+    left: 64,
+    top: 48,
+    width: 16,
+    height: 10,
+    backgroundColor: PAW_FUR,
+    borderWidth: 2,
+    borderColor: FUR_DARK,
+    borderRadius: 5,
+    transformOrigin: '0% 50%',
+  },
+  restTail: {
+    position: 'absolute',
+    left: 74,
+    top: 62,
+    width: 26,
+    height: 9,
+    backgroundColor: FUR,
+    borderWidth: 2,
+    borderColor: FUR_DARK,
+    borderRadius: 5,
+    transformOrigin: 'left center',
+  },
+  restBottle: {
+    position: 'absolute',
+    left: 76,
+    top: 36,
+    width: 16,
+    height: 30,
+    transformOrigin: '8px 2px',
+  },
+  restBottleBody: {
+    position: 'absolute',
+    left: 0,
+    top: 2,
+    width: 16,
+    height: 26,
+    backgroundColor: BOTTLE,
+    borderWidth: 2,
+    borderColor: BOTTLE_DARK,
+    borderTopLeftRadius: 4,
+    borderTopRightRadius: 4,
+    borderBottomLeftRadius: 7,
+    borderBottomRightRadius: 7,
+  },
+  restBottleCap: {
+    position: 'absolute',
+    left: 5,
+    top: -4,
+    width: 6,
+    height: 7,
+    backgroundColor: BOTTLE_DARK,
+    borderRadius: 2,
+  },
+});

@@ -49,6 +49,7 @@ function formatReminderHours(hours: ReminderHour[]): string {
 const mascotOptions: { id: MascotType; label: string; emoji: string; description: string }[] = [
   { id: 'chick', label: '병아리', emoji: '🐥', description: '노란 병아리 친구' },
   { id: 'cat', label: '고양이', emoji: '🐱', description: '회색 고양이 친구' },
+  { id: 'dog', label: '강아지', emoji: '🐶', description: '갈색 강아지 친구' },
   { id: 'none', label: '보이지 않기', emoji: '🚫', description: '마스코트 숨기기' },
 ];
 
@@ -518,10 +519,12 @@ const styles = StyleSheet.create({
   },
   mascotOptions: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing.sm,
   },
   mascotOption: {
-    flex: 1,
+    flexBasis: '47%',
+    flexGrow: 1,
     minHeight: 96,
     borderRadius: radius.lg,
     borderWidth: 1,
