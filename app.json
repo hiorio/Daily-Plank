@@ -11,7 +11,7 @@
       "url": "https://u.expo.dev/2b9a08a4-d627-4722-844f-68ae70c10275"
     },
     "runtimeVersion": {
-      "policy": "fingerprint"
+      "policy": "appVersion"
     },
     "assetBundlePatterns": [
       "**/*"
@@ -41,7 +41,7 @@
     ],
     "ios": {
       "bundleIdentifier": "com.hiorio.dailyplank",
-      "buildNumber": "14",
+      "buildNumber": "16",
       "supportsTablet": false,
       "infoPlist": {
         "CFBundleDisplayName": "매일 플랭크",
